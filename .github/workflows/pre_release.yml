@@ -71,7 +71,7 @@ jobs:
           is_prerelease: "yes"
           version_number: ${{ needs.release_metadata.outputs.version_number }}
           ref: ${{ needs.update_changelog.outputs.changelog_commitish }}
-          install_command: pip install -e ".[dev]"
+          install_command: uv pip install --system -e ".[dev]"
           build_command: hatch build
       # Publishes the package to PyPI using PyPA official GitHub action with OIDC authentication.
       - name: Publish package to PyPI

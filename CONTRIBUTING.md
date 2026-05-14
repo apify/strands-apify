@@ -7,6 +7,11 @@ Thank you for your interest in contributing!
 ```bash
 git clone https://github.com/apify/strands-apify.git
 cd strands-apify
+
+# Create a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
 pip install -e ".[dev]"
 ```
 

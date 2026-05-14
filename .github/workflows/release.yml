@@ -48,7 +48,7 @@ jobs:
     uses: apify/workflows/.github/workflows/python_lint_check.yaml@main
     with:
       python_versions: '["3.10", "3.11", "3.12", "3.13"]'
-      install_command: pip install -e ".[dev]"
+      install_command: uv pip install --system -e ".[dev]"
       lint_command: ruff check src tests && ruff format --check src tests
 
   type_check:
@@ -56,7 +56,7 @@ jobs:
     uses: apify/workflows/.github/workflows/python_type_check.yaml@main
     with:
       python_versions: '["3.10", "3.11", "3.12", "3.13"]'
-      install_command: pip install -e ".[dev]"
+      install_command: uv pip install --system -e ".[dev]"
       type_check_command: mypy src
 
   unit_tests:
@@ -65,7 +65,7 @@ jobs:
     with:
       python_versions: '["3.10", "3.11", "3.12", "3.13"]'
       operating_systems: '["ubuntu-latest"]'
-      install_command: pip install -e ".[dev]"
+      install_command: uv pip install --system -e ".[dev]"
       run_tests_command: pytest -q
 
   create_github_release:
@@ -100,7 +100,7 @@ jobs:
           package_name: strands-apify
           is_prerelease: ""
           version_number: ${{ needs.release_metadata.outputs.version_number }}
-          install_command: pip install -e ".[dev]"
+          install_command: uv pip install --system -e ".[dev]"
           build_command: hatch build
       # Publishes the package to PyPI using PyPA official GitHub action with OIDC authentication.
       - name: Publish package to PyPI
