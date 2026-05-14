@@ -46,7 +46,7 @@ def _format_error(e: Exception) -> str:
             case 400:
                 return f"Invalid request: {msg}"
             case 401:
-                return "Authentication failed. Verify your APIFY_API_TOKEN is valid."
+                return "Authentication failed. Verify your APIFY_TOKEN is valid."
             case 402:
                 return "Insufficient Apify plan credits or subscription limits exceeded."
             case 404:
@@ -83,10 +83,10 @@ class ApifyToolClient:
     """Helper class encapsulating Apify API interactions via apify-client."""
 
     def __init__(self) -> None:
-        token = os.getenv("APIFY_API_TOKEN", "")
+        token = os.getenv("APIFY_TOKEN", "")
         if not token:
             raise ValueError(
-                "APIFY_API_TOKEN environment variable is not set. "
+                "APIFY_TOKEN environment variable is not set. "
                 "Get your token at https://console.apify.com/account/integrations"
             )
         self.client: "ApifyClient" = ApifyClient(token, headers=TRACKING_HEADER)

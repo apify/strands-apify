@@ -14,10 +14,10 @@ Install from PyPI:
 pip install strands-apify
 ```
 
-Set the required API token (get one at https://console.apify.com/account/integrations):
+Set the required Apify token (get one at https://console.apify.com/account/integrations):
 
 ```bash
-export APIFY_API_TOKEN=your_api_token_here
+export APIFY_TOKEN=your_apify_token_here
 ```
 
 ## Key imports

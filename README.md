@@ -15,10 +15,10 @@ This package gives Strands agents access to [Apify Actors](https://apify.com/sto
 pip install strands-apify
 ```
 
-Set your Apify API token:
+Set your Apify token:
 
 ```bash
-export APIFY_API_TOKEN=your_api_token_here
+export APIFY_TOKEN=your_apify_token_here
 ```
 
 Get a token at [Apify Console > Settings > API & Integrations](https://console.apify.com/account/integrations).
@@ -131,7 +131,7 @@ apify_website_content_crawler(
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `APIFY_API_TOKEN` | Your Apify API token from [console.apify.com](https://console.apify.com/account/integrations) | Yes |
+| `APIFY_TOKEN` | Your Apify token from [console.apify.com](https://console.apify.com/account/integrations) | Yes |
 
 ## Development
 

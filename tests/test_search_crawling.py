@@ -60,7 +60,7 @@ def mock_apify_client():
 @pytest.fixture
 def mock_apify_env(monkeypatch):
     """Set required Apify environment variables."""
-    monkeypatch.setenv("APIFY_API_TOKEN", "test-token-12345")
+    monkeypatch.setenv("APIFY_TOKEN", "apify_api_test-token-12345")
 
 
 # --- apify_google_search_scraper ---
@@ -123,12 +123,12 @@ def test_google_search_scraper_missing_dependency(mock_apify_env):
 
 
 def test_google_search_scraper_missing_token(monkeypatch):
-    """Google Search Scraper returns error when APIFY_API_TOKEN is missing."""
-    monkeypatch.delenv("APIFY_API_TOKEN", raising=False)
+    """Google Search Scraper returns error when APIFY_TOKEN is missing."""
+    monkeypatch.delenv("APIFY_TOKEN", raising=False)
     result = apify_google_search_scraper(search_query="test")
 
     assert result["status"] == "error"
-    assert "APIFY_API_TOKEN" in result["content"][0]["text"]
+    assert "APIFY_TOKEN" in result["content"][0]["text"]
 
 
 def test_google_search_scraper_actor_failure(mock_apify_env, mock_apify_client):

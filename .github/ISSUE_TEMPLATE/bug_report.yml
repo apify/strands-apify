@@ -45,7 +45,7 @@ body:
       description: |
         The smallest code snippet that demonstrates the bug. Please include the
         tool call(s), Actor input, and any relevant Apify Actor IDs. Redact your
-        `APIFY_API_TOKEN`.
+        `APIFY_TOKEN`.
       render: python
     validations:
       required: true

@@ -62,7 +62,7 @@ def mock_apify_client():
 @pytest.fixture
 def mock_apify_env(monkeypatch):
     """Set required Apify environment variables."""
-    monkeypatch.setenv("APIFY_API_TOKEN", "test-token-12345")
+    monkeypatch.setenv("APIFY_TOKEN", "apify_api_test-token-12345")
 
 
 # --- _extract_linkedin_username ---
@@ -446,12 +446,12 @@ def test_social_media_missing_dependency(mock_apify_env):
 
 
 def test_social_media_missing_token(monkeypatch):
-    """Social media tools return error when APIFY_API_TOKEN is missing."""
-    monkeypatch.delenv("APIFY_API_TOKEN", raising=False)
+    """Social media tools return error when APIFY_TOKEN is missing."""
+    monkeypatch.delenv("APIFY_TOKEN", raising=False)
     result = apify_twitter_scraper(search_query="test")
 
     assert result["status"] == "error"
-    assert "APIFY_API_TOKEN" in result["content"][0]["text"]
+    assert "APIFY_TOKEN" in result["content"][0]["text"]
 
 
 def test_social_media_actor_failure(mock_apify_env, mock_apify_client):

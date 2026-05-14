@@ -90,7 +90,7 @@ def mock_apify_client():
 @pytest.fixture
 def mock_apify_env(monkeypatch):
     """Set required Apify environment variables."""
-    monkeypatch.setenv("APIFY_API_TOKEN", "test-token-12345")
+    monkeypatch.setenv("APIFY_TOKEN", "apify_api_test-token-12345")
 
 
 # --- Module import ---
@@ -106,9 +106,9 @@ def test_apify_core_module_is_importable():
 
 
 def test_client_missing_token(monkeypatch):
-    """ApifyToolClient raises ValueError when APIFY_API_TOKEN is not set."""
-    monkeypatch.delenv("APIFY_API_TOKEN", raising=False)
-    with pytest.raises(ValueError, match="APIFY_API_TOKEN"):
+    """ApifyToolClient raises ValueError when APIFY_TOKEN is not set."""
+    monkeypatch.delenv("APIFY_TOKEN", raising=False)
+    with pytest.raises(ValueError, match="APIFY_TOKEN"):
         ApifyToolClient()
 
 
@@ -117,7 +117,7 @@ def test_client_uses_env_token(mock_apify_env):
     with patch("strands_apify.utils.ApifyClient") as MockClient:
         ApifyToolClient()
         MockClient.assert_called_once_with(
-            "test-token-12345",
+            "apify_api_test-token-12345",
             headers={"x-apify-integration-platform": "strands-apify"},
         )
 
@@ -725,54 +725,54 @@ def test_missing_apify_client_scrape_url(mock_apify_env):
 
 
 def test_run_actor_missing_token(monkeypatch):
-    """apify_run_actor returns error dict when APIFY_API_TOKEN is missing."""
-    monkeypatch.delenv("APIFY_API_TOKEN", raising=False)
+    """apify_run_actor returns error dict when APIFY_TOKEN is missing."""
+    monkeypatch.delenv("APIFY_TOKEN", raising=False)
     result = apify_run_actor(actor_id="test/actor")
 
     assert result["status"] == "error"
-    assert "APIFY_API_TOKEN" in result["content"][0]["text"]
+    assert "APIFY_TOKEN" in result["content"][0]["text"]
 
 
 def test_get_dataset_items_missing_token(monkeypatch):
-    """apify_get_dataset_items returns error dict when APIFY_API_TOKEN is missing."""
-    monkeypatch.delenv("APIFY_API_TOKEN", raising=False)
+    """apify_get_dataset_items returns error dict when APIFY_TOKEN is missing."""
+    monkeypatch.delenv("APIFY_TOKEN", raising=False)
     result = apify_get_dataset_items(dataset_id="dataset-123")
 
     assert result["status"] == "error"
-    assert "APIFY_API_TOKEN" in result["content"][0]["text"]
+    assert "APIFY_TOKEN" in result["content"][0]["text"]
 
 
 def test_run_actor_and_get_dataset_missing_token(monkeypatch):
-    """apify_run_actor_and_get_dataset returns error dict when APIFY_API_TOKEN is missing."""
-    monkeypatch.delenv("APIFY_API_TOKEN", raising=False)
+    """apify_run_actor_and_get_dataset returns error dict when APIFY_TOKEN is missing."""
+    monkeypatch.delenv("APIFY_TOKEN", raising=False)
     result = apify_run_actor_and_get_dataset(actor_id="test/actor")
 
     assert result["status"] == "error"
-    assert "APIFY_API_TOKEN" in result["content"][0]["text"]
+    assert "APIFY_TOKEN" in result["content"][0]["text"]
 
 
 def test_run_task_missing_token(monkeypatch):
-    """apify_run_task returns error dict when APIFY_API_TOKEN is missing."""
-    monkeypatch.delenv("APIFY_API_TOKEN", raising=False)
+    """apify_run_task returns error dict when APIFY_TOKEN is missing."""
+    monkeypatch.delenv("APIFY_TOKEN", raising=False)
     result = apify_run_task(task_id="user~my-task")
 
     assert result["status"] == "error"
-    assert "APIFY_API_TOKEN" in result["content"][0]["text"]
+    assert "APIFY_TOKEN" in result["content"][0]["text"]
 
 
 def test_run_task_and_get_dataset_missing_token(monkeypatch):
-    """apify_run_task_and_get_dataset returns error dict when APIFY_API_TOKEN is missing."""
-    monkeypatch.delenv("APIFY_API_TOKEN", raising=False)
+    """apify_run_task_and_get_dataset returns error dict when APIFY_TOKEN is missing."""
+    monkeypatch.delenv("APIFY_TOKEN", raising=False)
     result = apify_run_task_and_get_dataset(task_id="user~my-task")
 
     assert result["status"] == "error"
-    assert "APIFY_API_TOKEN" in result["content"][0]["text"]
+    assert "APIFY_TOKEN" in result["content"][0]["text"]
 
 
 def test_scrape_url_missing_token(monkeypatch):
-    """apify_scrape_url returns error dict when APIFY_API_TOKEN is missing."""
-    monkeypatch.delenv("APIFY_API_TOKEN", raising=False)
+    """apify_scrape_url returns error dict when APIFY_TOKEN is missing."""
+    monkeypatch.delenv("APIFY_TOKEN", raising=False)
     result = apify_scrape_url(url="https://example.com")
 
     assert result["status"] == "error"
-    assert "APIFY_API_TOKEN" in result["content"][0]["text"]
+    assert "APIFY_TOKEN" in result["content"][0]["text"]
