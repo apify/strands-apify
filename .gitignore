@@ -11,9 +11,10 @@ dist/
 *.whl
 
 # Virtual environments
-.venv/
-venv/
+.venv*/
+venv*/
 env/
+.env-*/
 
 # Tool caches
 .pytest_cache/

@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
 name = "strands-apify"
-dynamic = ["version"]
+version = "0.1.0"
 description = "Apify web scraping, social media, search and automation tools for Strands Agents SDK"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -44,10 +44,6 @@ dev = [
     "hatch",
 ]
 
-[tool.hatch.version]
-source = "vcs"
-fallback-version = "0.1.0"
-
 [tool.hatch.build.targets.wheel]
 packages = ["src/strands_apify"]
 
@@ -81,8 +77,7 @@ select = [
 
 [tool.mypy]
 python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
+strict = true
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

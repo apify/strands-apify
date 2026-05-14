@@ -1,0 +1,34 @@
+name: Code checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  lint_check:
+    name: Lint check
+    uses: apify/workflows/.github/workflows/python_lint_check.yaml@main
+    with:
+      python_versions: '["3.10", "3.11", "3.12", "3.13"]'
+      install_command: pip install -e ".[dev]"
+      lint_command: ruff check src tests && ruff format --check src tests
+
+  type_check:
+    name: Type check
+    uses: apify/workflows/.github/workflows/python_type_check.yaml@main
+    with:
+      python_versions: '["3.10", "3.11", "3.12", "3.13"]'
+      install_command: pip install -e ".[dev]"
+      type_check_command: mypy src
+
+  unit_tests:
+    name: Unit tests
+    uses: apify/workflows/.github/workflows/python_unit_tests.yaml@main
+    with:
+      python_versions: '["3.10", "3.11", "3.12", "3.13"]'
+      operating_systems: '["ubuntu-latest"]'
+      install_command: pip install -e ".[dev]"
+      run_tests_command: pytest -q

@@ -1,6 +1,11 @@
 # strands-apify
 
-Apify tools for the [Strands Agents SDK](https://strandsagents.com/) — web scraping, social media, search, and automation.
+[![PyPI version](https://img.shields.io/pypi/v/strands-apify.svg)](https://pypi.org/project/strands-apify/)
+[![Python versions](https://img.shields.io/pypi/pyversions/strands-apify.svg)](https://pypi.org/project/strands-apify/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Code checks](https://github.com/apify/strands-apify/actions/workflows/run_code_checks.yml/badge.svg?branch=main)](https://github.com/apify/strands-apify/actions/workflows/run_code_checks.yml)
+
+Apify tools for the [Strands Agents SDK](https://strandsagents.com/) - web scraping, social media, search, and automation.
 
 This package gives Strands agents access to [Apify Actors](https://apify.com/store): serverless cloud programs that scrape websites, social platforms, search engines, and e-commerce sites, returning structured JSON or Markdown.
 
@@ -134,8 +139,15 @@ apify_website_content_crawler(
 git clone https://github.com/apify/strands-apify.git
 cd strands-apify
 pip install -e ".[dev]"
-hatch run prepare  # format, lint, typecheck, test
+hatch run prepare  # format check, lint, typecheck, test
 ```
+
+PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/)
+(`feat:`, `fix:`, `docs:`, `chore:`, ...) — the `check_pr_title` workflow enforces
+this and the changelog is generated from these prefixes via
+[git-cliff](https://git-cliff.org/). Releases are cut from the
+[Actions tab](https://github.com/apify/strands-apify/actions/workflows/release.yml)
+by manually triggering the **Create a release** workflow.
 
 ## License
 
