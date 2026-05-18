@@ -132,6 +132,7 @@ apify_website_content_crawler(
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `APIFY_TOKEN` | Your Apify token from [console.apify.com](https://console.apify.com/account/integrations) | Yes |
+| `STRANDS_APIFY_QUIET` | Set to `1` to suppress the rich panels printed on each tool call. Panels are auto-suppressed in non-interactive environments (CI, Docker, web services); use this flag to silence them in interactive shells too. | No |
 
 ## Contributing
 

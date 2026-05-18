@@ -10,7 +10,27 @@ from rich.panel import Panel
 from rich.text import Text
 
 logger = logging.getLogger(__name__)
-console = Console()
+
+# Rich panels are decoration — write them to stderr so they never mix with the
+# structured tool output that Strands consumes from stdout. The panels are only
+# emitted when stderr is attached to a terminal, so production / non-interactive
+# deployments stay silent without any configuration. Set STRANDS_APIFY_QUIET=1
+# to suppress panels even in interactive shells.
+console = Console(stderr=True)
+_QUIET_ENV_VALUES = frozenset({"1", "true", "yes", "on"})
+
+
+def _panels_enabled() -> bool:
+    """Return True if rich panels should be printed for the current call.
+
+    Suppresses output when:
+    - stderr is not a TTY (CI, Docker, web service, background worker), or
+    - STRANDS_APIFY_QUIET is set to a truthy value.
+    """
+    if os.getenv("STRANDS_APIFY_QUIET", "").lower() in _QUIET_ENV_VALUES:
+        return False
+    return console.is_terminal
+
 
 try:
     from apify_client import ApifyClient
@@ -69,13 +89,15 @@ def _error_result(e: Exception, tool_name: str) -> dict[str, Any]:
     """Build a structured error response and display an error panel."""
     message = _format_error(e)
     logger.error("%s failed: %s", tool_name, message)
-    console.print(Panel(Text(message, style="red"), title=ERROR_PANEL_TITLE, border_style="red"))
+    if _panels_enabled():
+        console.print(Panel(Text(message, style="red"), title=ERROR_PANEL_TITLE, border_style="red"))
     return {"status": "error", "content": [{"text": message}]}
 
 
 def _success_result(text: str, panel_body: str, panel_title: str) -> dict[str, Any]:
     """Build a structured success response and display a success panel."""
-    console.print(Panel(panel_body, title=f"[bold cyan]{panel_title}[/bold cyan]", border_style="green"))
+    if _panels_enabled():
+        console.print(Panel(panel_body, title=f"[bold cyan]{panel_title}[/bold cyan]", border_style="green"))
     return {"status": "success", "content": [{"text": text}]}
 
 
