@@ -6,6 +6,7 @@ import pytest
 
 from strands_apify.social_media import (
     _extract_linkedin_username,
+    _looks_like_instagram_url,
     apify_facebook_posts_scraper,
     apify_instagram_scraper,
     apify_linkedin_profile_detail,
@@ -159,6 +160,49 @@ def test_instagram_scraper_url_in_search_query(mock_apify_env, mock_apify_client
     run_input = call_kwargs["run_input"]
     assert run_input["directUrls"] == ["https://www.instagram.com/apify/"]
     assert "search" not in run_input
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "https://www.instagram.com/apify/",
+        "https://instagram.com/apify",
+        "http://instagram.com/explore/tags/cooking/",
+        "https://www.instagram.com/p/AbCdEfG/",
+    ],
+)
+def test_looks_like_instagram_url_true(value):
+    """Helper returns True for real Instagram URLs (with and without subdomain)."""
+    assert _looks_like_instagram_url(value) is True
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "apify",  # plain handle
+        "#cooking",  # hashtag
+        "why-instagram.com-matters",  # substring trap the old heuristic fell into
+        "http",  # bare scheme prefix the old heuristic accepted
+        "https://example.com/instagram.com",  # not actually hosted on instagram.com
+        "ftp://instagram.com/apify",  # wrong scheme
+        "javascript:alert(1)",
+        "",
+    ],
+)
+def test_looks_like_instagram_url_false(value):
+    """Helper rejects plain queries, lookalikes, and non-http(s) schemes."""
+    assert _looks_like_instagram_url(value) is False
+
+
+def test_instagram_scraper_search_query_with_instagram_substring(mock_apify_env, mock_apify_client):
+    """A search_query that merely contains 'instagram.com' is treated as a search, not a URL."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        result = apify_instagram_scraper(search_query="why-instagram.com-matters")
+
+    assert result["status"] == "success"
+    run_input = mock_apify_client.actor.return_value.call.call_args.kwargs["run_input"]
+    assert run_input["search"] == "why-instagram.com-matters"
+    assert "directUrls" not in run_input
 
 
 def test_instagram_scraper_missing_params(mock_apify_env):

@@ -171,14 +171,33 @@ def test_run_actor_with_memory(mock_apify_env, mock_apify_client):
 
 
 def test_run_actor_failure(mock_apify_env, mock_apify_client):
-    """Actor run returns error dict when Actor fails."""
+    """Actor run returns error dict when Actor fails and surfaces Apify's statusMessage."""
     mock_apify_client.actor.return_value.call.return_value = MOCK_FAILED_RUN
 
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         result = apify_run_actor(actor_id="actor/my-scraper")
 
     assert result["status"] == "error"
-    assert "FAILED" in result["content"][0]["text"]
+    text = result["content"][0]["text"]
+    assert "FAILED" in text
+    # statusMessage from MOCK_FAILED_RUN must be propagated to the user-facing error
+    assert "Actor failed with an error" in text
+
+
+def test_run_actor_failure_without_status_message(mock_apify_env, mock_apify_client):
+    """Failure error message still works when the Apify run omits statusMessage."""
+    run_without_message = {**MOCK_FAILED_RUN}
+    run_without_message.pop("statusMessage", None)
+    mock_apify_client.actor.return_value.call.return_value = run_without_message
+
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        result = apify_run_actor(actor_id="actor/my-scraper")
+
+    assert result["status"] == "error"
+    text = result["content"][0]["text"]
+    assert "FAILED" in text
+    assert "Run ID" in text
+    assert "Message:" not in text
 
 
 def test_run_actor_timeout(mock_apify_env, mock_apify_client):

@@ -44,6 +44,20 @@ VALID_TWITTER_SORT_OPTIONS = ("Latest", "Top")
 VALID_LINKEDIN_SCRAPER_MODES = ("Short", "Full")
 
 
+def _looks_like_instagram_url(value: str) -> bool:
+    """Return True if ``value`` is a well-formed http(s) URL whose host is instagram.com.
+
+    Used by ``apify_instagram_scraper`` to decide whether a ``search_query`` should
+    be treated as a direct URL or as a plain search term. Stricter than a substring
+    check — e.g. it rejects ``"why-instagram.com-matters"`` and ``"http"``.
+    """
+    parsed = urlparse(value)
+    if parsed.scheme not in ("http", "https"):
+        return False
+    host = (parsed.hostname or "").lower()
+    return host == "instagram.com" or host.endswith(".instagram.com")
+
+
 def _extract_linkedin_username(profile_url: str) -> str:
     """Extract a LinkedIn username from a profile URL, or return the value as-is if already a username."""
     parsed = urlparse(profile_url)
@@ -136,7 +150,7 @@ def apify_instagram_scraper(
 
         if urls:
             run_input["directUrls"] = urls
-        elif search_query and ("instagram.com" in search_query or search_query.startswith("http")):
+        elif search_query and _looks_like_instagram_url(search_query):
             run_input["directUrls"] = [search_query]
         else:
             run_input["search"] = search_query
