@@ -209,7 +209,7 @@ def apify_website_content_crawler(
 
     Uses the Website Content Crawler Actor to perform a multi-page crawl starting
     from the given URL. Returns page content as markdown. This is the extended
-    multi-page version — distinct from apify_scrape_url which scrapes a single page.
+    multi-page version - distinct from apify_scrape_url which scrapes a single page.
 
     Args:
         start_url: The starting URL to crawl, e.g. "https://docs.example.com".

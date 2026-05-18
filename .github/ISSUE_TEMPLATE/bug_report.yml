@@ -9,7 +9,7 @@ body:
         sections below so we can reproduce and fix the issue quickly.
 
         > **Security issues:** please do *not* file public bug reports for
-        > vulnerabilities — see [SECURITY.md](../SECURITY.md) instead.
+        > vulnerabilities - see [SECURITY.md](../SECURITY.md) instead.
   - type: input
     id: version
     attributes:
@@ -35,7 +35,7 @@ body:
     id: what-happened
     attributes:
       label: What happened?
-      description: A clear description of the bug — what you did, what you expected, what actually occurred.
+      description: A clear description of the bug - what you did, what you expected, what actually occurred.
     validations:
       required: true
   - type: textarea

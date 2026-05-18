@@ -12,9 +12,9 @@ before the details become public.
 
 Preferred channels:
 
-1. **GitHub Security Advisories** — [Report a vulnerability](https://github.com/apify/strands-apify/security/advisories/new)
+1. **GitHub Security Advisories** - [Report a vulnerability](https://github.com/apify/strands-apify/security/advisories/new)
    (private, only repo maintainers can see it).
-2. **Email** — `support@apify.com` with subject prefix `[security] strands-apify:`.
+2. **Email** - `support@apify.com` with subject prefix `[security] strands-apify:`.
 
 Please include:
 
@@ -31,7 +31,7 @@ to remain anonymous).
 
 This policy covers the `strands-apify` package itself. For vulnerabilities in:
 
-- the underlying **Apify platform / Actors** — report to Apify per
+- the underlying **Apify platform / Actors** - report to Apify per
   <https://apify.com/security>;
-- the **Strands Agents SDK** — report upstream at
+- the **Strands Agents SDK** - report upstream at
   <https://github.com/strands-agents/sdk-python>.

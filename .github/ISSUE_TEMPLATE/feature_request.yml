@@ -30,7 +30,7 @@ body:
     id: actor
     attributes:
       label: Apify Actor (if applicable)
-      placeholder: "username/actor-name — https://apify.com/username/actor-name"
+      placeholder: "username/actor-name - https://apify.com/username/actor-name"
   - type: textarea
     id: alternatives
     attributes:

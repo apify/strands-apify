@@ -46,6 +46,18 @@ hatch run test       # pytest
 4. Export the function in `__init__.py` and add it to the relevant `APIFY_*_TOOLS` preset list
 5. Add tests covering: happy path, missing token, missing dependency, Actor failure, parameter validation
 
+## PR conventions
+
+PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/)
+(`feat:`, `fix:`, `docs:`, `chore:`, ...). The `check_pr_title` workflow enforces this,
+and the changelog is generated from these prefixes via [git-cliff](https://git-cliff.org/).
+
+## Releases
+
+Releases are cut from the
+[Actions tab](https://github.com/apify/strands-apify/actions/workflows/release.yml)
+by manually triggering the **Create a release** workflow.
+
 ## Security issue notifications
 
 If you discover a potential security issue, please notify us privately via the repository's security advisory feature rather than filing a public issue.

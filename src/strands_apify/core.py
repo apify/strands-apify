@@ -37,7 +37,7 @@ def apify_run_actor(
 ) -> Dict[str, Any]:
     """Run any Apify Actor and return the run metadata as JSON.
 
-    An Actor is a serverless cloud app on the Apify platform — it takes JSON input,
+    An Actor is a serverless cloud app on the Apify platform - it takes JSON input,
     runs the scraping or automation job, and writes results to a dataset. This tool
     executes the Actor synchronously and returns run metadata only (run_id, status,
     dataset_id, timestamps). Use apify_run_actor_and_get_dataset to also fetch the
@@ -46,7 +46,7 @@ def apify_run_actor(
     Common Actors:
     - "apify/website-content-crawler" - scrape websites and extract content as Markdown
     - "apify/web-scraper" - general-purpose web scraper with JS rendering
-    - "apify/google-search-scraper" — scrape Google search results
+    - "apify/google-search-scraper" - scrape Google search results
 
     Args:
         actor_id: Actor identifier in "username/actor-name" format,
@@ -94,7 +94,7 @@ def apify_get_dataset_items(
 ) -> Dict[str, Any]:
     """Fetch items from an existing Apify dataset and return them as JSON.
 
-    Every Actor run writes its output to a dataset — a structured, append-only store
+    Every Actor run writes its output to a dataset - a structured, append-only store
     for tabular data. Use the dataset_id from the run metadata returned by apify_run_actor
     or apify_run_task. Use offset for pagination through large datasets.
 
@@ -292,7 +292,7 @@ def apify_scrape_url(
 
     Uses the Website Content Crawler Actor under the hood, pre-configured for
     fast single-page scraping. This is the simplest way to extract readable content
-    from any web page — no Actor input schema needed. For multi-page crawls, use
+    from any web page - no Actor input schema needed. For multi-page crawls, use
     apify_run_actor_and_get_dataset with "apify/website-content-crawler" directly.
 
     Args:

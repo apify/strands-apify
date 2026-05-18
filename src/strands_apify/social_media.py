@@ -211,7 +211,7 @@ def apify_linkedin_profile_search(
             search operators.
         results_limit: Maximum number of profiles to return. Defaults to 20.
         locations: Filter by locations (e.g. ["San Francisco", "New York"]).
-            Use full names — LinkedIn may misinterpret abbreviations.
+            Use full names - LinkedIn may misinterpret abbreviations.
         current_job_titles: Filter by current job titles
             (e.g. ["Software Engineer", "Data Scientist"]).
         profile_scraper_mode: Amount of detail to return. "Short" (default)

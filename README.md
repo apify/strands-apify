@@ -44,16 +44,16 @@ agent = Agent(tools=[apify_scrape_url, apify_google_search_scraper])
 
 Convenience presets:
 
-- `APIFY_CORE_TOOLS` — generic Actor/task/dataset/scrape tools
-- `APIFY_SOCIAL_TOOLS` — Instagram, LinkedIn, Twitter/X, TikTok, Facebook
-- `APIFY_SEARCH_TOOLS` — Google Search, Google Maps, YouTube, multi-page crawler, e-commerce
-- `APIFY_ALL_TOOLS` — everything (use sparingly; many tools may overwhelm an LLM's tool choice)
+- `APIFY_CORE_TOOLS` - generic Actor/task/dataset/scrape tools
+- `APIFY_SOCIAL_TOOLS` - Instagram, LinkedIn, Twitter/X, TikTok, Facebook
+- `APIFY_SEARCH_TOOLS` - Google Search, Google Maps, YouTube, multi-page crawler, e-commerce
+- `APIFY_ALL_TOOLS` - everything (use sparingly; many tools may overwhelm an LLM's tool choice)
 
 ## Tools
 
 ### Core tools
 
-Generic Apify platform access — run any Actor, run saved tasks, fetch dataset items, and scrape a single URL.
+Generic Apify platform access - run any Actor, run saved tasks, fetch dataset items, and scrape a single URL.
 
 | Tool | What it does |
 |------|--------------|
@@ -133,21 +133,9 @@ apify_website_content_crawler(
 |----------|-------------|----------|
 | `APIFY_TOKEN` | Your Apify token from [console.apify.com](https://console.apify.com/account/integrations) | Yes |
 
-## Development
+## Contributing
 
-```bash
-git clone https://github.com/apify/strands-apify.git
-cd strands-apify
-pip install -e ".[dev]"
-hatch run prepare  # format check, lint, typecheck, test
-```
-
-PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/)
-(`feat:`, `fix:`, `docs:`, `chore:`, ...) — the `check_pr_title` workflow enforces
-this and the changelog is generated from these prefixes via
-[git-cliff](https://git-cliff.org/). Releases are cut from the
-[Actions tab](https://github.com/apify/strands-apify/actions/workflows/release.yml)
-by manually triggering the **Create a release** workflow.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 
 ## License
 

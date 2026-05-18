@@ -8,4 +8,4 @@ contact_links:
     about: Questions about Apify Actors, the Apify API, or your Apify account.
   - name: Security vulnerability
     url: https://github.com/apify/strands-apify/security/advisories/new
-    about: Privately report a security vulnerability — please do not file a public issue.
+    about: Privately report a security vulnerability - please do not file a public issue.
