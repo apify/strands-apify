@@ -2,7 +2,7 @@
 
 import logging
 import os
-from typing import Any, Dict, List, Literal, Optional, get_args
+from typing import Any, Literal, get_args
 from urllib.parse import urlparse
 
 from rich.console import Console
@@ -65,7 +65,7 @@ def _format_error(e: Exception) -> str:
     return str(e)
 
 
-def _error_result(e: Exception, tool_name: str) -> Dict[str, Any]:
+def _error_result(e: Exception, tool_name: str) -> dict[str, Any]:
     """Build a structured error response and display an error panel."""
     message = _format_error(e)
     logger.error("%s failed: %s", tool_name, message)
@@ -73,7 +73,7 @@ def _error_result(e: Exception, tool_name: str) -> Dict[str, Any]:
     return {"status": "error", "content": [{"text": message}]}
 
 
-def _success_result(text: str, panel_body: str, panel_title: str) -> Dict[str, Any]:
+def _success_result(text: str, panel_body: str, panel_title: str) -> dict[str, Any]:
     """Build a structured success response and display a success panel."""
     console.print(Panel(panel_body, title=f"[bold cyan]{panel_title}[/bold cyan]", border_style="green"))
     return {"status": "success", "content": [{"text": text}]}
@@ -89,10 +89,10 @@ class ApifyToolClient:
                 "APIFY_TOKEN environment variable is not set. "
                 "Get your token at https://console.apify.com/account/integrations"
             )
-        self.client: "ApifyClient" = ApifyClient(token, headers=TRACKING_HEADER)
+        self.client: ApifyClient = ApifyClient(token, headers=TRACKING_HEADER)
 
     @staticmethod
-    def _check_run_status(actor_run: Dict[str, Any], label: str) -> None:
+    def _check_run_status(actor_run: dict[str, Any], label: str) -> None:
         """Raise RuntimeError if the Actor run did not succeed."""
         status = actor_run.get("status", "UNKNOWN")
         if status != "SUCCEEDED":
@@ -129,18 +129,18 @@ class ApifyToolClient:
     def run_actor(
         self,
         actor_id: str,
-        run_input: Optional[Dict[str, Any]] = None,
+        run_input: dict[str, Any] | None = None,
         timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-        memory_mbytes: Optional[int] = None,
-        build: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        memory_mbytes: int | None = None,
+        build: str | None = None,
+    ) -> dict[str, Any]:
         """Run an Apify Actor synchronously and return run metadata."""
         self._validate_identifier(actor_id, "actor_id")
         self._validate_positive(timeout_secs, "timeout_secs")
         if memory_mbytes is not None:
             self._validate_positive(memory_mbytes, "memory_mbytes")
 
-        call_kwargs: Dict[str, Any] = {
+        call_kwargs: dict[str, Any] = {
             "run_input": run_input if run_input is not None else {},
             "timeout_secs": timeout_secs,
             "logger": None,
@@ -168,7 +168,7 @@ class ApifyToolClient:
         dataset_id: str,
         limit: int = DEFAULT_DATASET_ITEMS_LIMIT,
         offset: int = 0,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch items from an Apify dataset."""
         self._validate_identifier(dataset_id, "dataset_id")
         self._validate_positive(limit, "limit")
@@ -180,13 +180,13 @@ class ApifyToolClient:
     def run_actor_and_get_dataset(
         self,
         actor_id: str,
-        run_input: Optional[Dict[str, Any]] = None,
+        run_input: dict[str, Any] | None = None,
         timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-        memory_mbytes: Optional[int] = None,
-        build: Optional[str] = None,
+        memory_mbytes: int | None = None,
+        build: str | None = None,
         dataset_items_limit: int = DEFAULT_DATASET_ITEMS_LIMIT,
         dataset_items_offset: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run an Actor synchronously, then fetch its default dataset items."""
         self._validate_positive(dataset_items_limit, "dataset_items_limit")
         self._validate_non_negative(dataset_items_offset, "dataset_items_offset")
@@ -218,7 +218,7 @@ class ApifyToolClient:
                 f"Invalid crawler_type '{crawler_type}'. Must be one of: {', '.join(WEBSITE_CONTENT_CRAWLER_TYPES)}."
             )
 
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             "startUrls": [{"url": url}],
             "maxCrawlPages": 1,
             "crawlerType": crawler_type,
@@ -246,17 +246,17 @@ class ApifyToolClient:
     def run_task(
         self,
         task_id: str,
-        task_input: Optional[Dict[str, Any]] = None,
+        task_input: dict[str, Any] | None = None,
         timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-        memory_mbytes: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        memory_mbytes: int | None = None,
+    ) -> dict[str, Any]:
         """Run an Apify task synchronously and return run metadata."""
         self._validate_identifier(task_id, "task_id")
         self._validate_positive(timeout_secs, "timeout_secs")
         if memory_mbytes is not None:
             self._validate_positive(memory_mbytes, "memory_mbytes")
 
-        call_kwargs: Dict[str, Any] = {"timeout_secs": timeout_secs}
+        call_kwargs: dict[str, Any] = {"timeout_secs": timeout_secs}
         if task_input is not None:
             call_kwargs["task_input"] = task_input
         if memory_mbytes is not None:
@@ -278,12 +278,12 @@ class ApifyToolClient:
     def run_task_and_get_dataset(
         self,
         task_id: str,
-        task_input: Optional[Dict[str, Any]] = None,
+        task_input: dict[str, Any] | None = None,
         timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-        memory_mbytes: Optional[int] = None,
+        memory_mbytes: int | None = None,
         dataset_items_limit: int = DEFAULT_DATASET_ITEMS_LIMIT,
         dataset_items_offset: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run a task synchronously, then fetch its default dataset items."""
         self._validate_positive(dataset_items_limit, "dataset_items_limit")
         self._validate_non_negative(dataset_items_offset, "dataset_items_offset")

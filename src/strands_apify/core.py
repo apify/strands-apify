@@ -11,7 +11,7 @@ Available Tools:
 """
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any
 
 from strands import tool
 
@@ -30,11 +30,11 @@ from .utils import (
 @tool
 def apify_run_actor(
     actor_id: str,
-    run_input: Optional[Dict[str, Any]] = None,
+    run_input: dict[str, Any] | None = None,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-    memory_mbytes: Optional[int] = None,
-    build: Optional[str] = None,
-) -> Dict[str, Any]:
+    memory_mbytes: int | None = None,
+    build: str | None = None,
+) -> dict[str, Any]:
     """Run any Apify Actor and return the run metadata as JSON.
 
     An Actor is a serverless cloud app on the Apify platform - it takes JSON input,
@@ -91,7 +91,7 @@ def apify_get_dataset_items(
     dataset_id: str,
     limit: int = DEFAULT_DATASET_ITEMS_LIMIT,
     offset: int = 0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Fetch items from an existing Apify dataset and return them as JSON.
 
     Every Actor run writes its output to a dataset - a structured, append-only store
@@ -124,13 +124,13 @@ def apify_get_dataset_items(
 @tool
 def apify_run_actor_and_get_dataset(
     actor_id: str,
-    run_input: Optional[Dict[str, Any]] = None,
+    run_input: dict[str, Any] | None = None,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-    memory_mbytes: Optional[int] = None,
-    build: Optional[str] = None,
+    memory_mbytes: int | None = None,
+    build: str | None = None,
     dataset_items_limit: int = DEFAULT_DATASET_ITEMS_LIMIT,
     dataset_items_offset: int = 0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Run an Apify Actor and fetch its dataset results in one step.
 
     Convenience tool that combines running an Actor and fetching its default dataset
@@ -183,10 +183,10 @@ def apify_run_actor_and_get_dataset(
 @tool
 def apify_run_task(
     task_id: str,
-    task_input: Optional[Dict[str, Any]] = None,
+    task_input: dict[str, Any] | None = None,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-    memory_mbytes: Optional[int] = None,
-) -> Dict[str, Any]:
+    memory_mbytes: int | None = None,
+) -> dict[str, Any]:
     """Run a saved Apify task and return the run metadata as JSON.
 
     Tasks are saved Actor configurations with preset inputs, managed in Apify Console.
@@ -231,12 +231,12 @@ def apify_run_task(
 @tool
 def apify_run_task_and_get_dataset(
     task_id: str,
-    task_input: Optional[Dict[str, Any]] = None,
+    task_input: dict[str, Any] | None = None,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-    memory_mbytes: Optional[int] = None,
+    memory_mbytes: int | None = None,
     dataset_items_limit: int = DEFAULT_DATASET_ITEMS_LIMIT,
     dataset_items_offset: int = 0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Run a saved Apify task and fetch its dataset results in one step.
 
     Convenience tool that combines running a task and fetching its default dataset
@@ -287,7 +287,7 @@ def apify_scrape_url(
     url: str,
     timeout_secs: int = DEFAULT_SCRAPE_TIMEOUT_SECS,
     crawler_type: CrawlerType = "cheerio",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Scrape a single URL and return its content as Markdown.
 
     Uses the Website Content Crawler Actor under the hood, pre-configured for

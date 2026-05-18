@@ -30,10 +30,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/apify/strands-apify"
-Documentation = "https://github.com/apify/strands-apify#readme"
-Repository = "https://github.com/apify/strands-apify"
-Issues = "https://github.com/apify/strands-apify/issues"
+"Homepage" = "https://apify.com"
+"Source" = "https://github.com/apify/strands-apify"
+"Release Notes" = "https://github.com/apify/strands-apify/releases"
+"Issue Tracker" = "https://github.com/apify/strands-apify/issues"
+"Changelog" = "https://github.com/apify/strands-apify/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
@@ -86,10 +87,17 @@ include = ["src/**/*.py", "tests/**/*.py"]
 
 [tool.ruff.lint]
 select = [
-    "E",
-    "F",
-    "I",
-    "B",
+    "E",     # pycodestyle errors
+    "F",     # pyflakes
+    "I",     # isort
+    "B",     # bugbear
+    "UP",    # pyupgrade (Python 3.10+ idioms — auto-fixes Dict→dict, Optional→| None, etc.)
+    "SIM",   # simplifications
+    "C4",    # comprehensions
+    "PIE",   # misc
+    "PT",    # pytest style
+    "TCH",   # move runtime-only imports under TYPE_CHECKING
+    "RUF",   # ruff-specific
 ]
 
 [tool.mypy]
@@ -98,6 +106,7 @@ strict = true
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config --durations=5"
 testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"

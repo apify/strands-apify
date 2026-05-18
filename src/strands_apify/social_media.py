@@ -12,7 +12,7 @@ Available Tools:
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.parse import urlparse
 
 from strands import tool
@@ -55,11 +55,11 @@ def _extract_linkedin_username(profile_url: str) -> str:
 def _social_media_result(
     actor_name: str,
     client: ApifyToolClient,
-    run_input: Dict[str, Any],
+    run_input: dict[str, Any],
     actor_id: str,
     timeout_secs: int,
     results_limit: int,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Shared execution logic for social media scraper tools."""
     result = client.run_actor_and_get_dataset(
         actor_id=actor_id,
@@ -82,14 +82,14 @@ def _social_media_result(
 
 @tool
 def apify_instagram_scraper(
-    search_query: Optional[str] = None,
-    urls: Optional[List[str]] = None,
+    search_query: str | None = None,
+    urls: list[str] | None = None,
     results_type: str = "posts",
     results_limit: int = DEFAULT_SOCIAL_MEDIA_RESULTS_LIMIT,
     search_type: str = "hashtag",
     search_limit: int = 10,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Scrape Instagram profiles, posts, reels, or hashtags.
 
     Provide either a search query to discover content or direct Instagram URLs to scrape.
@@ -125,7 +125,7 @@ def apify_instagram_scraper(
             )
 
         client = ApifyToolClient()
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             "resultsType": results_type,
             "resultsLimit": results_limit,
         }
@@ -156,7 +156,7 @@ def apify_linkedin_profile_posts(
     profile_url: str,
     results_limit: int = DEFAULT_SOCIAL_MEDIA_RESULTS_LIMIT,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Scrape posts from a LinkedIn profile.
 
     Accepts a LinkedIn profile URL (e.g. "https://www.linkedin.com/in/username") or
@@ -174,7 +174,7 @@ def apify_linkedin_profile_posts(
         _check_dependency()
         client = ApifyToolClient()
         username = _extract_linkedin_username(profile_url)
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             "username": username,
             "limit": min(results_limit, 100),
         }
@@ -194,11 +194,11 @@ def apify_linkedin_profile_posts(
 def apify_linkedin_profile_search(
     search_query: str,
     results_limit: int = DEFAULT_SOCIAL_MEDIA_RESULTS_LIMIT,
-    locations: Optional[List[str]] = None,
-    current_job_titles: Optional[List[str]] = None,
+    locations: list[str] | None = None,
+    current_job_titles: list[str] | None = None,
     profile_scraper_mode: str = "Short",
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Search for LinkedIn profiles with filters.
 
     Find people on LinkedIn using a keyword query combined with optional filters
@@ -231,7 +231,7 @@ def apify_linkedin_profile_search(
             )
 
         client = ApifyToolClient()
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             "searchQuery": search_query,
             "maxItems": results_limit,
             "profileScraperMode": profile_scraper_mode,
@@ -258,7 +258,7 @@ def apify_linkedin_profile_detail(
     profile_url: str,
     include_email: bool = False,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get detailed information from a LinkedIn profile.
 
     Accepts a LinkedIn profile URL (e.g. "https://www.linkedin.com/in/username") or
@@ -279,7 +279,7 @@ def apify_linkedin_profile_detail(
         _check_dependency()
         client = ApifyToolClient()
         username = _extract_linkedin_username(profile_url)
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             "username": username,
             "includeEmail": include_email,
         }
@@ -297,14 +297,14 @@ def apify_linkedin_profile_detail(
 
 @tool
 def apify_twitter_scraper(
-    search_query: Optional[str] = None,
-    urls: Optional[List[str]] = None,
-    twitter_handles: Optional[List[str]] = None,
+    search_query: str | None = None,
+    urls: list[str] | None = None,
+    twitter_handles: list[str] | None = None,
     results_limit: int = DEFAULT_SOCIAL_MEDIA_RESULTS_LIMIT,
     sort: str = "Latest",
-    tweet_language: Optional[str] = None,
+    tweet_language: str | None = None,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Scrape tweets from Twitter/X by search query, handles, or specific URLs.
 
     Supports Twitter advanced search syntax (e.g. "from:NASA", "#AI min_faves:100",
@@ -336,7 +336,7 @@ def apify_twitter_scraper(
             raise ValueError(f"Invalid sort '{sort}'. Must be one of: {', '.join(VALID_TWITTER_SORT_OPTIONS)}.")
 
         client = ApifyToolClient()
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             "maxItems": results_limit,
             "sort": sort,
         }
@@ -364,13 +364,13 @@ def apify_twitter_scraper(
 
 @tool
 def apify_tiktok_scraper(
-    search_query: Optional[str] = None,
-    hashtags: Optional[List[str]] = None,
-    profiles: Optional[List[str]] = None,
-    urls: Optional[List[str]] = None,
+    search_query: str | None = None,
+    hashtags: list[str] | None = None,
+    profiles: list[str] | None = None,
+    urls: list[str] | None = None,
     results_limit: int = DEFAULT_SOCIAL_MEDIA_RESULTS_LIMIT,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Scrape TikTok videos by search, hashtag, profile, or direct post URL.
 
     Use the input that best matches your intent:
@@ -399,7 +399,7 @@ def apify_tiktok_scraper(
             raise ValueError("Provide at least one of 'search_query', 'hashtags', 'profiles', or 'urls'.")
 
         client = ApifyToolClient()
-        run_input: Dict[str, Any] = {"resultsPerPage": results_limit}
+        run_input: dict[str, Any] = {"resultsPerPage": results_limit}
 
         if search_query:
             run_input["searchQueries"] = [search_query]
@@ -426,9 +426,9 @@ def apify_tiktok_scraper(
 def apify_facebook_posts_scraper(
     page_url: str,
     results_limit: int = DEFAULT_SOCIAL_MEDIA_RESULTS_LIMIT,
-    only_posts_newer_than: Optional[str] = None,
+    only_posts_newer_than: str | None = None,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Scrape posts from a Facebook page or profile.
 
     Provide a Facebook page or profile URL to scrape its posts. Optionally filter
@@ -448,7 +448,7 @@ def apify_facebook_posts_scraper(
     try:
         _check_dependency()
         client = ApifyToolClient()
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             "startUrls": [{"url": page_url}],
             "resultsLimit": results_limit,
         }

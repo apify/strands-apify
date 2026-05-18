@@ -10,7 +10,7 @@ Available Tools:
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from strands import tool
 
@@ -35,11 +35,11 @@ VALID_ECOMMERCE_URL_TYPES = ("product", "listing")
 def _search_crawl_result(
     actor_name: str,
     client: ApifyToolClient,
-    run_input: Dict[str, Any],
+    run_input: dict[str, Any],
     actor_id: str,
     timeout_secs: int,
     results_limit: int,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Run a search/crawling Actor and return formatted results."""
     result = client.run_actor_and_get_dataset(
         actor_id=actor_id,
@@ -60,10 +60,10 @@ def _search_crawl_result(
 def apify_google_search_scraper(
     search_query: str,
     results_limit: int = 10,
-    country_code: Optional[str] = None,
-    language_code: Optional[str] = None,
+    country_code: str | None = None,
+    language_code: str | None = None,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Search Google and return structured search results.
 
     Uses the Google Search Scraper Actor to perform a Google search and return
@@ -86,7 +86,7 @@ def apify_google_search_scraper(
         _check_dependency()
         client = ApifyToolClient()
         max_pages = max(1, (results_limit + 9) // 10)
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             "queries": search_query,
             "maxPagesPerQuery": max_pages,
         }
@@ -110,11 +110,11 @@ def apify_google_search_scraper(
 def apify_google_places_scraper(
     search_query: str,
     results_limit: int = DEFAULT_SEARCH_RESULTS_LIMIT,
-    language: Optional[str] = None,
+    language: str | None = None,
     include_reviews: bool = False,
     max_reviews: int = 5,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Search Google Maps for businesses and places, optionally including reviews.
 
     Uses the Google Maps Scraper Actor to find places matching a search query
@@ -134,7 +134,7 @@ def apify_google_places_scraper(
     try:
         _check_dependency()
         client = ApifyToolClient()
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             "searchStringsArray": [search_query],
             "maxCrawledPlacesPerSearch": results_limit,
             "maxReviews": max_reviews if include_reviews else 0,
@@ -155,11 +155,11 @@ def apify_google_places_scraper(
 
 @tool
 def apify_youtube_scraper(
-    search_query: Optional[str] = None,
-    urls: Optional[List[str]] = None,
+    search_query: str | None = None,
+    urls: list[str] | None = None,
     results_limit: int = DEFAULT_SEARCH_RESULTS_LIMIT,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Scrape YouTube videos, channels, or search results.
 
     Uses the YouTube Scraper Actor to search YouTube or scrape specific video/channel
@@ -179,7 +179,7 @@ def apify_youtube_scraper(
         if not search_query and not urls:
             raise ValueError("At least one of 'search_query' or 'urls' must be provided.")
         client = ApifyToolClient()
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             "maxResults": results_limit,
         }
         if search_query is not None:
@@ -204,7 +204,7 @@ def apify_website_content_crawler(
     max_pages: int = 10,
     max_depth: int = 2,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Crawl a website and extract content from multiple pages.
 
     Uses the Website Content Crawler Actor to perform a multi-page crawl starting
@@ -224,7 +224,7 @@ def apify_website_content_crawler(
         _check_dependency()
         client = ApifyToolClient()
         client._validate_url(start_url)
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             "startUrls": [{"url": start_url}],
             "maxCrawlPages": max_pages,
             "maxCrawlDepth": max_depth,
@@ -248,7 +248,7 @@ def apify_ecommerce_scraper(
     url_type: str = "product",
     results_limit: int = DEFAULT_SEARCH_RESULTS_LIMIT,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Scrape product data from e-commerce websites.
 
     Uses the E-commerce Scraping Tool Actor to extract structured product data
@@ -273,7 +273,7 @@ def apify_ecommerce_scraper(
         if url_type not in VALID_ECOMMERCE_URL_TYPES:
             raise ValueError(f"Invalid url_type '{url_type}'. Must be one of: {', '.join(VALID_ECOMMERCE_URL_TYPES)}.")
         url_field = "listingUrls" if url_type == "listing" else "detailsUrls"
-        run_input: Dict[str, Any] = {
+        run_input: dict[str, Any] = {
             url_field: [{"url": url}],
             "maxProductResults": results_limit,
         }
