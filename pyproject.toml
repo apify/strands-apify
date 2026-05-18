@@ -25,7 +25,7 @@ classifiers = [
 ]
 dependencies = [
     "strands-agents>=1.0.0",
-    "apify-client>=1.0.0",
+    "apify-client>=2.5.0",
     "rich>=13.0.0",
 ]
 
@@ -46,6 +46,23 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/strands_apify"]
+
+# Source distribution - explicit allowlist so personal/local-only paths
+# (.personal_testing/, .claude/, docs-submission/, etc.) never reach PyPI.
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/pyproject.toml",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/CODE_OF_CONDUCT.md",
+    "/CONTRIBUTING.md",
+    "/SECURITY.md",
+    "/LICENSE",
+    "/NOTICE",
+    "/llms.txt",
+]
 
 [tool.hatch.envs.default]
 dependencies = [
