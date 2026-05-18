@@ -236,6 +236,16 @@ def test_youtube_scraper_no_input(mock_apify_env):
     assert "search_query" in result["content"][0]["text"]
 
 
+def test_youtube_scraper_invalid_url_in_list(mock_apify_env):
+    """YouTube Scraper returns error when any URL in the urls list is invalid."""
+    result = apify_youtube_scraper(urls=["https://youtube.com/watch?v=ok", "ftp://bad"])
+
+    assert result["status"] == "error"
+    text = result["content"][0]["text"]
+    assert "urls[1]" in text
+    assert "Invalid URL scheme" in text
+
+
 # --- apify_website_content_crawler ---
 
 

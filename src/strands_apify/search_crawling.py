@@ -21,6 +21,8 @@ from .utils import (
     _check_dependency,
     _error_result,
     _success_result,
+    _validate_url,
+    _validate_urls,
 )
 
 GOOGLE_SEARCH_SCRAPER_ID = "apify/google-search-scraper"
@@ -178,6 +180,8 @@ def apify_youtube_scraper(
         _check_dependency()
         if not search_query and not urls:
             raise ValueError("At least one of 'search_query' or 'urls' must be provided.")
+        if urls is not None:
+            _validate_urls(urls, "urls")
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
             "maxResults": results_limit,
@@ -223,7 +227,7 @@ def apify_website_content_crawler(
     try:
         _check_dependency()
         client = ApifyToolClient()
-        client._validate_url(start_url)
+        _validate_url(start_url)
         run_input: dict[str, Any] = {
             "startUrls": [{"url": start_url}],
             "maxCrawlPages": max_pages,
@@ -269,7 +273,7 @@ def apify_ecommerce_scraper(
     try:
         _check_dependency()
         client = ApifyToolClient()
-        client._validate_url(url)
+        _validate_url(url)
         if url_type not in VALID_ECOMMERCE_URL_TYPES:
             raise ValueError(f"Invalid url_type '{url_type}'. Must be one of: {', '.join(VALID_ECOMMERCE_URL_TYPES)}.")
         url_field = "listingUrls" if url_type == "listing" else "detailsUrls"

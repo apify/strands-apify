@@ -24,6 +24,8 @@ from .utils import (
     _check_dependency,
     _error_result,
     _success_result,
+    _validate_url,
+    _validate_urls,
 )
 
 DEFAULT_SOCIAL_MEDIA_RESULTS_LIMIT = 20
@@ -123,6 +125,8 @@ def apify_instagram_scraper(
             raise ValueError(
                 f"Invalid search_type '{search_type}'. Must be one of: {', '.join(VALID_INSTAGRAM_SEARCH_TYPES)}."
             )
+        if urls is not None:
+            _validate_urls(urls, "urls")
 
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
@@ -334,6 +338,8 @@ def apify_twitter_scraper(
             raise ValueError("Provide at least one of 'search_query', 'urls', or 'twitter_handles'.")
         if sort not in VALID_TWITTER_SORT_OPTIONS:
             raise ValueError(f"Invalid sort '{sort}'. Must be one of: {', '.join(VALID_TWITTER_SORT_OPTIONS)}.")
+        if urls is not None:
+            _validate_urls(urls, "urls")
 
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
@@ -397,6 +403,8 @@ def apify_tiktok_scraper(
         _check_dependency()
         if not search_query and not hashtags and not profiles and not urls:
             raise ValueError("Provide at least one of 'search_query', 'hashtags', 'profiles', or 'urls'.")
+        if urls is not None:
+            _validate_urls(urls, "urls")
 
         client = ApifyToolClient()
         run_input: dict[str, Any] = {"resultsPerPage": results_limit}
@@ -447,6 +455,7 @@ def apify_facebook_posts_scraper(
     """
     try:
         _check_dependency()
+        _validate_url(page_url)
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
             "startUrls": [{"url": page_url}],

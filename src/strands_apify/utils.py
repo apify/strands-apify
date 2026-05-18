@@ -101,6 +101,54 @@ def _success_result(text: str, panel_body: str, panel_title: str) -> dict[str, A
     return {"status": "success", "content": [{"text": text}]}
 
 
+# Module-level validators
+# These are package-private (underscore-prefixed) but used across submodules.
+
+
+def _check_run_status(actor_run: dict[str, Any], label: str) -> None:
+    """Raise RuntimeError if the Actor run did not succeed."""
+    status = actor_run.get("status", "UNKNOWN")
+    if status != "SUCCEEDED":
+        run_id = actor_run.get("id", "N/A")
+        raise RuntimeError(f"{label} finished with status {status}. Run ID: {run_id}")
+
+
+def _validate_url(url: str) -> None:
+    """Raise ValueError if the URL does not have a valid HTTP(S) scheme and domain."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Invalid URL scheme '{parsed.scheme}'. Only http and https URLs are supported.")
+    if not parsed.netloc:
+        raise ValueError(f"Invalid URL '{url}'. A domain is required.")
+
+
+def _validate_urls(urls: list[str], name: str) -> None:
+    """Raise ValueError if any URL in the list is invalid; error names the offending index."""
+    for i, url in enumerate(urls):
+        try:
+            _validate_url(url)
+        except ValueError as e:
+            raise ValueError(f"{name}[{i}]: {e}") from e
+
+
+def _validate_identifier(value: str, name: str) -> None:
+    """Raise ValueError if a required string identifier is empty or whitespace-only."""
+    if not value.strip():
+        raise ValueError(f"'{name}' must be a non-empty string.")
+
+
+def _validate_positive(value: int, name: str) -> None:
+    """Raise ValueError if the value is not a positive integer (> 0)."""
+    if value <= 0:
+        raise ValueError(f"'{name}' must be a positive integer, got {value}.")
+
+
+def _validate_non_negative(value: int, name: str) -> None:
+    """Raise ValueError if the value is negative."""
+    if value < 0:
+        raise ValueError(f"'{name}' must be a non-negative integer, got {value}.")
+
+
 class ApifyToolClient:
     """Helper class encapsulating Apify API interactions via apify-client."""
 
@@ -113,41 +161,6 @@ class ApifyToolClient:
             )
         self.client: ApifyClient = ApifyClient(token, headers=TRACKING_HEADER)
 
-    @staticmethod
-    def _check_run_status(actor_run: dict[str, Any], label: str) -> None:
-        """Raise RuntimeError if the Actor run did not succeed."""
-        status = actor_run.get("status", "UNKNOWN")
-        if status != "SUCCEEDED":
-            run_id = actor_run.get("id", "N/A")
-            raise RuntimeError(f"{label} finished with status {status}. Run ID: {run_id}")
-
-    @staticmethod
-    def _validate_url(url: str) -> None:
-        """Raise ValueError if the URL does not have a valid HTTP(S) scheme and domain."""
-        parsed = urlparse(url)
-        if parsed.scheme not in ("http", "https"):
-            raise ValueError(f"Invalid URL scheme '{parsed.scheme}'. Only http and https URLs are supported.")
-        if not parsed.netloc:
-            raise ValueError(f"Invalid URL '{url}'. A domain is required.")
-
-    @staticmethod
-    def _validate_identifier(value: str, name: str) -> None:
-        """Raise ValueError if a required string identifier is empty or whitespace-only."""
-        if not value.strip():
-            raise ValueError(f"'{name}' must be a non-empty string.")
-
-    @staticmethod
-    def _validate_positive(value: int, name: str) -> None:
-        """Raise ValueError if the value is not a positive integer (> 0)."""
-        if value <= 0:
-            raise ValueError(f"'{name}' must be a positive integer, got {value}.")
-
-    @staticmethod
-    def _validate_non_negative(value: int, name: str) -> None:
-        """Raise ValueError if the value is negative."""
-        if value < 0:
-            raise ValueError(f"'{name}' must be a non-negative integer, got {value}.")
-
     def run_actor(
         self,
         actor_id: str,
@@ -157,10 +170,10 @@ class ApifyToolClient:
         build: str | None = None,
     ) -> dict[str, Any]:
         """Run an Apify Actor synchronously and return run metadata."""
-        self._validate_identifier(actor_id, "actor_id")
-        self._validate_positive(timeout_secs, "timeout_secs")
+        _validate_identifier(actor_id, "actor_id")
+        _validate_positive(timeout_secs, "timeout_secs")
         if memory_mbytes is not None:
-            self._validate_positive(memory_mbytes, "memory_mbytes")
+            _validate_positive(memory_mbytes, "memory_mbytes")
 
         call_kwargs: dict[str, Any] = {
             "run_input": run_input if run_input is not None else {},
@@ -175,7 +188,7 @@ class ApifyToolClient:
         actor_run = self.client.actor(actor_id).call(**call_kwargs)
         if actor_run is None:
             raise RuntimeError(f"Actor {actor_id} returned no run data (possible wait timeout).")
-        self._check_run_status(actor_run, f"Actor {actor_id}")
+        _check_run_status(actor_run, f"Actor {actor_id}")
 
         return {
             "run_id": actor_run.get("id"),
@@ -192,9 +205,9 @@ class ApifyToolClient:
         offset: int = 0,
     ) -> list[dict[str, Any]]:
         """Fetch items from an Apify dataset."""
-        self._validate_identifier(dataset_id, "dataset_id")
-        self._validate_positive(limit, "limit")
-        self._validate_non_negative(offset, "offset")
+        _validate_identifier(dataset_id, "dataset_id")
+        _validate_positive(limit, "limit")
+        _validate_non_negative(offset, "offset")
 
         result = self.client.dataset(dataset_id).list_items(limit=limit, offset=offset)
         return list(result.items)
@@ -210,8 +223,8 @@ class ApifyToolClient:
         dataset_items_offset: int = 0,
     ) -> dict[str, Any]:
         """Run an Actor synchronously, then fetch its default dataset items."""
-        self._validate_positive(dataset_items_limit, "dataset_items_limit")
-        self._validate_non_negative(dataset_items_offset, "dataset_items_offset")
+        _validate_positive(dataset_items_limit, "dataset_items_limit")
+        _validate_non_negative(dataset_items_offset, "dataset_items_offset")
 
         run_metadata = self.run_actor(
             actor_id=actor_id,
@@ -233,8 +246,8 @@ class ApifyToolClient:
         crawler_type: "CrawlerType" = "cheerio",
     ) -> str:
         """Scrape a single URL using Website Content Crawler and return Markdown."""
-        self._validate_url(url)
-        self._validate_positive(timeout_secs, "timeout_secs")
+        _validate_url(url)
+        _validate_positive(timeout_secs, "timeout_secs")
         if crawler_type not in WEBSITE_CONTENT_CRAWLER_TYPES:
             raise ValueError(
                 f"Invalid crawler_type '{crawler_type}'. Must be one of: {', '.join(WEBSITE_CONTENT_CRAWLER_TYPES)}."
@@ -252,7 +265,7 @@ class ApifyToolClient:
         )
         if actor_run is None:
             raise RuntimeError("Website Content Crawler returned no run data (possible wait timeout).")
-        self._check_run_status(actor_run, "Website Content Crawler")
+        _check_run_status(actor_run, "Website Content Crawler")
 
         dataset_id = actor_run.get("defaultDatasetId")
         if not dataset_id:
@@ -273,10 +286,10 @@ class ApifyToolClient:
         memory_mbytes: int | None = None,
     ) -> dict[str, Any]:
         """Run an Apify task synchronously and return run metadata."""
-        self._validate_identifier(task_id, "task_id")
-        self._validate_positive(timeout_secs, "timeout_secs")
+        _validate_identifier(task_id, "task_id")
+        _validate_positive(timeout_secs, "timeout_secs")
         if memory_mbytes is not None:
-            self._validate_positive(memory_mbytes, "memory_mbytes")
+            _validate_positive(memory_mbytes, "memory_mbytes")
 
         call_kwargs: dict[str, Any] = {"timeout_secs": timeout_secs}
         if task_input is not None:
@@ -287,7 +300,7 @@ class ApifyToolClient:
         task_run = self.client.task(task_id).call(**call_kwargs)
         if task_run is None:
             raise RuntimeError(f"Task {task_id} returned no run data (possible wait timeout).")
-        self._check_run_status(task_run, f"Task {task_id}")
+        _check_run_status(task_run, f"Task {task_id}")
 
         return {
             "run_id": task_run.get("id"),
@@ -307,8 +320,8 @@ class ApifyToolClient:
         dataset_items_offset: int = 0,
     ) -> dict[str, Any]:
         """Run a task synchronously, then fetch its default dataset items."""
-        self._validate_positive(dataset_items_limit, "dataset_items_limit")
-        self._validate_non_negative(dataset_items_offset, "dataset_items_offset")
+        _validate_positive(dataset_items_limit, "dataset_items_limit")
+        _validate_non_negative(dataset_items_offset, "dataset_items_offset")
 
         run_metadata = self.run_task(
             task_id=task_id,

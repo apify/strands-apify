@@ -433,6 +433,40 @@ def test_facebook_posts_scraper_with_date_filter(mock_apify_env, mock_apify_clie
     assert run_input["onlyPostsNewerThan"] == "2024-01-01"
 
 
+def test_facebook_posts_scraper_invalid_page_url(mock_apify_env):
+    """Facebook posts scraper returns error for non-http(s) page_url."""
+    result = apify_facebook_posts_scraper(page_url="not-a-url")
+
+    assert result["status"] == "error"
+    assert "Invalid URL" in result["content"][0]["text"]
+
+
+def test_twitter_scraper_invalid_url_in_list(mock_apify_env):
+    """Twitter scraper returns error when any URL in the list is invalid; error names the index."""
+    result = apify_twitter_scraper(urls=["https://x.com/valid", "ftp://bad"])
+
+    assert result["status"] == "error"
+    text = result["content"][0]["text"]
+    assert "urls[1]" in text
+    assert "Invalid URL scheme" in text
+
+
+def test_tiktok_scraper_invalid_url_in_list(mock_apify_env):
+    """TikTok scraper returns error when any URL in the list is invalid."""
+    result = apify_tiktok_scraper(urls=["not-a-url"])
+
+    assert result["status"] == "error"
+    assert "urls[0]" in result["content"][0]["text"]
+
+
+def test_instagram_scraper_invalid_url_in_list(mock_apify_env):
+    """Instagram scraper returns error when any URL in the urls list is invalid."""
+    result = apify_instagram_scraper(urls=["https://www.instagram.com/apify/", "javascript:alert(1)"])
+
+    assert result["status"] == "error"
+    assert "urls[1]" in result["content"][0]["text"]
+
+
 # --- Social media: dependency and token guards ---
 
 
