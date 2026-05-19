@@ -41,14 +41,11 @@ __all__ = [
     "apify_facebook_posts_scraper",
     "apify_get_dataset_items",
     "apify_google_places_scraper",
-    # Search & crawling tools
     "apify_google_search_scraper",
-    # Social media tools
     "apify_instagram_scraper",
     "apify_linkedin_profile_detail",
     "apify_linkedin_profile_posts",
     "apify_linkedin_profile_search",
-    # Core tools
     "apify_run_actor",
     "apify_run_actor_and_get_dataset",
     "apify_run_task",

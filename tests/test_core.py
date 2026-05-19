@@ -4,6 +4,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+from conftest import MOCK_ACTOR_RUN, MOCK_FAILED_RUN, MOCK_TIMED_OUT_RUN
 
 from strands_apify import core as apify_core
 from strands_apify.core import (
@@ -15,37 +16,6 @@ from strands_apify.core import (
     apify_scrape_url,
 )
 from strands_apify.utils import ApifyToolClient
-
-MOCK_ACTOR_RUN = {
-    "id": "run-HG7ml5fB1hCp8YEBA",
-    "actId": "actor~my-scraper",
-    "userId": "user-abc123",
-    "startedAt": "2026-03-15T14:30:00.000Z",
-    "finishedAt": "2026-03-15T14:35:22.000Z",
-    "status": "SUCCEEDED",
-    "statusMessage": "Actor finished successfully",
-    "defaultDatasetId": "dataset-WkC9gct8rq1uR5vDZ",
-    "defaultKeyValueStoreId": "kvs-Xb3A8gct8rq1uR5vD",
-    "buildNumber": "1.2.3",
-}
-
-MOCK_FAILED_RUN = {
-    **MOCK_ACTOR_RUN,
-    "status": "FAILED",
-    "statusMessage": "Actor failed with an error",
-}
-
-MOCK_TIMED_OUT_RUN = {
-    **MOCK_ACTOR_RUN,
-    "status": "TIMED-OUT",
-    "statusMessage": "Actor run timed out",
-}
-
-MOCK_DATASET_ITEMS = [
-    {"url": "https://example.com/product/1", "title": "Widget A", "price": 19.99, "currency": "USD"},
-    {"url": "https://example.com/product/2", "title": "Widget B", "price": 29.99, "currency": "USD"},
-    {"url": "https://example.com/product/3", "title": "Widget C", "price": 39.99, "currency": "EUR"},
-]
 
 MOCK_SCRAPED_ITEM = {
     "url": "https://example.com",
@@ -63,34 +33,6 @@ def _make_apify_api_error(status_code: int, message: str) -> Exception:
     error.status_code = status_code
     error.message = message
     return error
-
-
-@pytest.fixture
-def mock_apify_client():
-    """Create a mock ApifyClient with pre-configured responses."""
-    client = MagicMock()
-
-    mock_actor = MagicMock()
-    mock_actor.call.return_value = MOCK_ACTOR_RUN
-    client.actor.return_value = mock_actor
-
-    mock_task = MagicMock()
-    mock_task.call.return_value = MOCK_ACTOR_RUN
-    client.task.return_value = mock_task
-
-    mock_dataset = MagicMock()
-    mock_list_result = MagicMock()
-    mock_list_result.items = MOCK_DATASET_ITEMS
-    mock_dataset.list_items.return_value = mock_list_result
-    client.dataset.return_value = mock_dataset
-
-    return client
-
-
-@pytest.fixture
-def mock_apify_env(monkeypatch):
-    """Set required Apify environment variables."""
-    monkeypatch.setenv("APIFY_TOKEN", "apify_api_test-token-12345")
 
 
 # --- Module import ---
