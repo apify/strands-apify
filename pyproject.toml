@@ -25,7 +25,10 @@ classifiers = [
 ]
 dependencies = [
     "strands-agents>=1.0.0",
-    "apify-client>=2.5.0",
+    # Upper bound <3.0.0: apify-client 3.0 (released 2026-05-20) is a major
+    # rewrite (Run dataclass instead of dict, new ApifyApiError signature,
+    # renamed timeout kwarg). Migrate in a follow-up.
+    "apify-client>=2.5.0,<3.0.0",
     "rich>=13.0.0",
 ]
 
