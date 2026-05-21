@@ -24,7 +24,7 @@ jobs:
           VERSION="${TAG_NAME#v}"
           echo "version_number=${VERSION}" >> $GITHUB_OUTPUT
 
-      - uses: apify/workflows/git-cliff-release@6cbb5232cc59d59047f1e8268da10747e729989e
+      - uses: apify/actions/git-cliff-release@v1.1.2
         name: Prepare release metadata
         id: release_metadata
         with:
@@ -82,7 +82,7 @@ jobs:
       url: https://pypi.org/project/strands-apify
     steps:
       - name: Prepare distribution
-        uses: apify/workflows/prepare-pypi-distribution@6cbb5232cc59d59047f1e8268da10747e729989e
+        uses: apify/actions/prepare-pypi-distribution@v1.1.2
         with:
           ref: ${{ needs.update_changelog.outputs.changelog_commitish }}
           package_name: strands-apify
