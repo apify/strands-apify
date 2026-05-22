@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest a new tool, Actor wrapper, or enhancement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement to strands-apify!
+
+        If you're proposing a new Apify Actor wrapper, please link to the
+        Actor on https://apify.com/store so we can evaluate its input/output
+        schema.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the use case or pain point this feature would address.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: |
+        What would the new tool / parameter / behavior look like? If you have
+        an idea for the function signature or docstring, paste it here.
+    validations:
+      required: true
+  - type: input
+    id: actor
+    attributes:
+      label: Apify Actor (if applicable)
+      placeholder: "username/actor-name - https://apify.com/username/actor-name"
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you thought about, including existing tools that almost solve this.

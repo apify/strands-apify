@@ -1,0 +1,115 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "strands-apify"
+version = "0.1.0"
+description = "Apify web scraping, social media, search and automation tools for Strands Agents SDK"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Apify", email = "support@apify.com"}
+]
+keywords = ["strands", "agents", "ai", "tool", "apify", "web-scraping", "automation", "social-media", "scraping"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "strands-agents>=1.0.0",
+    # Upper bound <3.0.0: apify-client 3.0 (released 2026-05-20) is a major
+    # rewrite (Run dataclass instead of dict, new ApifyApiError signature,
+    # renamed timeout kwarg). Migrate in a follow-up.
+    "apify-client>=2.5.0,<3.0.0",
+    "rich>=13.0.0",
+]
+
+[project.urls]
+"Homepage" = "https://apify.com"
+"Source" = "https://github.com/apify/strands-apify"
+"Release Notes" = "https://github.com/apify/strands-apify/releases"
+"Issue Tracker" = "https://github.com/apify/strands-apify/issues"
+"Changelog" = "https://github.com/apify/strands-apify/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0,<9.0.0",
+    "pytest-asyncio>=0.25.0,<1.0.0",
+    "ruff>=0.11.0,<1.0.0",
+    "mypy>=1.15.0,<2.0.0",
+    "hatch",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/strands_apify"]
+
+# Source distribution - explicit allowlist so personal/local-only paths
+# (.personal_testing/, .claude/, docs-submission/, etc.) never reach PyPI.
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/pyproject.toml",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/CODE_OF_CONDUCT.md",
+    "/CONTRIBUTING.md",
+    "/SECURITY.md",
+    "/LICENSE",
+    "/NOTICE",
+    "/llms.txt",
+]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest>=8.0.0,<9.0.0",
+    "pytest-asyncio>=0.25.0,<1.0.0",
+    "ruff>=0.11.0,<1.0.0",
+    "mypy>=1.15.0,<2.0.0",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args}"
+lint = "ruff check src tests"
+format = "ruff format --check src tests"
+format-fix = "ruff format src tests"
+typecheck = "mypy src"
+prepare = ["format", "lint", "typecheck", "test"]
+
+[tool.ruff]
+line-length = 120
+include = ["src/**/*.py", "tests/**/*.py"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "F",     # pyflakes
+    "I",     # isort
+    "B",     # bugbear
+    "UP",    # pyupgrade (Python 3.10+ idioms — auto-fixes Dict→dict, Optional→| None, etc.)
+    "SIM",   # simplifications
+    "C4",    # comprehensions
+    "PIE",   # misc
+    "PT",    # pytest style
+    "TCH",   # move runtime-only imports under TYPE_CHECKING
+    "RUF",   # ruff-specific
+]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config --durations=5"
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"

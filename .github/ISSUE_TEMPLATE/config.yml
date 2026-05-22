@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Strands Agents support
+    url: https://github.com/strands-agents/sdk-python/issues
+    about: Questions about the Strands Agents SDK itself (not specific to Apify tools).
+  - name: Apify platform support
+    url: https://apify.com/contact
+    about: Questions about Apify Actors, the Apify API, or your Apify account.
+  - name: Security vulnerability
+    url: https://github.com/apify/strands-apify/security/advisories/new
+    about: Privately report a security vulnerability - please do not file a public issue.

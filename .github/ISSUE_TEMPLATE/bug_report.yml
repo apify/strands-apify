@@ -1,0 +1,62 @@
+name: Bug report
+description: Report a problem with strands-apify
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill in the
+        sections below so we can reproduce and fix the issue quickly.
+
+        > **Security issues:** please do *not* file public bug reports for
+        > vulnerabilities - see [SECURITY.md](../SECURITY.md) instead.
+  - type: input
+    id: version
+    attributes:
+      label: strands-apify version
+      placeholder: "0.1.0 (run `pip show strands-apify`)"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.12.1"
+    validations:
+      required: true
+  - type: input
+    id: strands-agents
+    attributes:
+      label: strands-agents version
+      placeholder: "1.x.y (run `pip show strands-agents`)"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug - what you did, what you expected, what actually occurred.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: |
+        The smallest code snippet that demonstrates the bug. Please include the
+        tool call(s), Actor input, and any relevant Apify Actor IDs. Redact your
+        `APIFY_TOKEN`.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / traceback
+      description: Full Python traceback or relevant log output, if any.
+      render: shell
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Operating system, virtualenv setup, related Apify run URL, etc.

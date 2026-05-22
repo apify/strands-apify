@@ -1,0 +1,134 @@
+# strands-apify
+
+Apify tools for the Strands Agents SDK - exposes [Apify Actors](https://apify.com/store)
+(serverless cloud scrapers and automation programs) as `@tool`-decorated functions
+that any Strands agent can call.
+
+Maintained by [Apify](https://apify.com/), licensed under Apache-2.0.
+
+## Setup
+
+Install from PyPI:
+
+```bash
+pip install strands-apify
+```
+
+Set the required Apify token (get one at https://console.apify.com/account/integrations):
+
+```bash
+export APIFY_TOKEN=your_apify_token_here
+```
+
+## Key imports
+
+```python
+# Preset tool lists - pass directly to an Agent
+from strands_apify import (
+    APIFY_CORE_TOOLS,    # 6 generic platform tools
+    APIFY_SOCIAL_TOOLS,  # 7 social media scrapers
+    APIFY_SEARCH_TOOLS,  # 5 search / crawl / e-commerce tools
+    APIFY_ALL_TOOLS,     # all 18 tools combined
+)
+
+# Individual tools - import what you need
+from strands_apify import (
+    # Core
+    apify_run_actor,
+    apify_get_dataset_items,
+    apify_run_actor_and_get_dataset,
+    apify_run_task,
+    apify_run_task_and_get_dataset,
+    apify_scrape_url,
+    # Social media
+    apify_instagram_scraper,
+    apify_linkedin_profile_posts,
+    apify_linkedin_profile_search,
+    apify_linkedin_profile_detail,
+    apify_twitter_scraper,
+    apify_tiktok_scraper,
+    apify_facebook_posts_scraper,
+    # Search & crawling
+    apify_google_search_scraper,
+    apify_google_places_scraper,
+    apify_youtube_scraper,
+    apify_website_content_crawler,
+    apify_ecommerce_scraper,
+)
+
+# Low-level client wrapper, exposed for advanced use cases
+from strands_apify import ApifyToolClient
+```
+
+## Quick start
+
+```python
+from strands import Agent
+from strands_apify import APIFY_CORE_TOOLS
+
+agent = Agent(tools=APIFY_CORE_TOOLS)
+agent("Scrape https://example.com and summarize the content.")
+```
+
+## Tool inventory
+
+### Core (6) - `APIFY_CORE_TOOLS`
+
+Generic Apify platform access - run any Actor or saved task, fetch dataset items,
+scrape a single URL.
+
+- `apify_run_actor(actor_id, run_input=None, ...)` - run any Actor, return run metadata.
+- `apify_get_dataset_items(dataset_id, limit=100, offset=0)` - fetch items from a dataset.
+- `apify_run_actor_and_get_dataset(actor_id, run_input=None, ...)` - run + fetch in one call.
+- `apify_run_task(task_id, task_input=None, ...)` - run a saved task.
+- `apify_run_task_and_get_dataset(task_id, task_input=None, ...)` - run task + fetch.
+- `apify_scrape_url(url, crawler_type="cheerio", ...)` - single-URL → Markdown.
+  Crawler types: `cheerio` (fastest), `playwright:adaptive`, `playwright:firefox`.
+
+### Social media (7) - `APIFY_SOCIAL_TOOLS`
+
+- `apify_instagram_scraper` → `apify/instagram-scraper`
+- `apify_linkedin_profile_posts` → `apimaestro/linkedin-profile-posts`
+- `apify_linkedin_profile_search` → `harvestapi/linkedin-profile-search`
+- `apify_linkedin_profile_detail` → `apimaestro/linkedin-profile-detail`
+- `apify_twitter_scraper` → `apidojo/twitter-scraper-lite`
+- `apify_tiktok_scraper` → `clockworks/tiktok-scraper`
+- `apify_facebook_posts_scraper` → `apify/facebook-posts-scraper`
+
+### Search & crawling (5) - `APIFY_SEARCH_TOOLS`
+
+- `apify_google_search_scraper` → `apify/google-search-scraper`
+- `apify_google_places_scraper` → `compass/crawler-google-places`
+- `apify_youtube_scraper` → `streamers/youtube-scraper`
+- `apify_website_content_crawler` → `apify/website-content-crawler` (multi-page crawl)
+- `apify_ecommerce_scraper` → `apify/e-commerce-scraping-tool`
+
+## Return shape
+
+Every tool returns a dict matching the Strands `ToolResult` convention:
+
+```python
+{
+    "status": "success" | "error",
+    "content": [{"text": "..."}],  # JSON-serialized payload or error message
+}
+```
+
+Errors are caught inside the tool and converted to `{"status": "error", ...}` - they
+never raise out, so the agent's reasoning loop is not interrupted.
+
+## Usage notes
+
+- `APIFY_ALL_TOOLS` exists for convenience but registering 18 tools at once can
+  overwhelm an LLM. Prefer the focused presets or individual imports.
+- Each tool calls Apify Actors synchronously via the `apify-client` package and
+  blocks until the run completes (or hits `timeout_secs`).
+- The package sends `x-apify-integration-platform: strands-apify` on every API
+  request for attribution.
+
+## Links
+
+- Source: https://github.com/apify/strands-apify
+- PyPI: https://pypi.org/project/strands-apify/
+- Apify Store (find Actors): https://apify.com/store
+- Strands Agents SDK: https://strandsagents.com/
