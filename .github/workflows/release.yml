@@ -35,7 +35,7 @@ jobs:
   lint_check:
     if: ${{ !github.event.release.prerelease }}
     name: Lint check
-    uses: apify/workflows/.github/workflows/python_lint_check.yaml@6cbb5232cc59d59047f1e8268da10747e729989e
+    uses: apify/workflows/.github/workflows/python_lint_check.yaml@47c305bdd5647f56c224ef9257804493e0912698
     with:
       python_versions: '["3.10", "3.11", "3.12", "3.13"]'
       install_command: uv pip install --system -e ".[dev]"
@@ -44,7 +44,7 @@ jobs:
   type_check:
     if: ${{ !github.event.release.prerelease }}
     name: Type check
-    uses: apify/workflows/.github/workflows/python_type_check.yaml@6cbb5232cc59d59047f1e8268da10747e729989e
+    uses: apify/workflows/.github/workflows/python_type_check.yaml@47c305bdd5647f56c224ef9257804493e0912698
     with:
       python_versions: '["3.10", "3.11", "3.12", "3.13"]'
       install_command: uv pip install --system -e ".[dev]"
@@ -53,7 +53,7 @@ jobs:
   unit_tests:
     if: ${{ !github.event.release.prerelease }}
     name: Unit tests
-    uses: apify/workflows/.github/workflows/python_unit_tests.yaml@6cbb5232cc59d59047f1e8268da10747e729989e
+    uses: apify/workflows/.github/workflows/python_unit_tests.yaml@47c305bdd5647f56c224ef9257804493e0912698
     with:
       python_versions: '["3.10", "3.11", "3.12", "3.13"]'
       operating_systems: '["ubuntu-latest"]'
@@ -63,7 +63,7 @@ jobs:
   update_changelog:
     name: Update changelog
     needs: [release_metadata, lint_check, type_check, unit_tests]
-    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@6cbb5232cc59d59047f1e8268da10747e729989e
+    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@47c305bdd5647f56c224ef9257804493e0912698
     with:
       version_number: ${{ needs.release_metadata.outputs.version_number }}
       changelog: ${{ needs.release_metadata.outputs.changelog }}
