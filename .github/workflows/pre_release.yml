@@ -14,9 +14,19 @@ concurrency:
 
 jobs:
   release_metadata:
-    if: "!startsWith(github.event.head_commit.message, 'docs') && !startsWith(github.event.head_commit.message, 'ci') && startsWith(github.repository, 'apify/')"
+    # Skip prerelease publishing on commits that don't change shipped code (docs / ci).
+    if: |
+      !startsWith(github.event.head_commit.message, 'docs:') &&
+      !startsWith(github.event.head_commit.message, 'docs(') &&
+      !startsWith(github.event.head_commit.message, 'ci:') &&
+      !startsWith(github.event.head_commit.message, 'ci(') &&
+      startsWith(github.repository, 'apify/')
     name: Prepare release metadata
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read  # git-cliff enhances release notes with PR links via GITHUB_TOKEN.
+      issues: read         # git-cliff enhances release notes with issue links via GITHUB_TOKEN.
     outputs:
       version_number: ${{ steps.release_metadata.outputs.version_number }}
       tag_name: ${{ steps.release_metadata.outputs.tag_name }}
@@ -58,8 +68,8 @@ jobs:
     needs: [release_metadata, update_changelog]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      id-token: write # Required for OIDC authentication.
+      contents: read
+      id-token: write  # Required for OIDC authentication.
     environment:
       name: pypi
       url: https://pypi.org/project/strands-apify

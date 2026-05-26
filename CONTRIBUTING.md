@@ -108,29 +108,27 @@ automatically.
 
 ### How beta and stable releases compose
 
-Because `pre_release.yml` keeps `pyproject.toml` at the next stable base
-version, the stable cut becomes mechanical:
+Both `pre_release.yml` and `release.yml` call the same
+`python_bump_and_update_changelog` reusable workflow before publishing, so
+`pyproject.toml` and `CHANGELOG.md` are always written to match the version
+that the workflow tags and publishes. Concretely, for a stable cut:
 
-- After betas have been running, `pyproject.toml` says e.g. `version = "0.2.1"`.
-- When you trigger `release.yml` with `release_type: auto`, `git-cliff`
-  computes the same `0.2.1` from conventional commits.
-- `prepare-pypi-distribution` reads `pyproject.toml` as-is (no bump on stable
-  releases) and builds the wheel as `0.2.1`. The tag, GitHub release, and
-  PyPI artifact all agree.
+1. `release_metadata` computes the version (via `git-cliff`, honoring the
+   selected `release_type`: `auto` follows conventional commits and lifts to
+   minor on `feat:` or to major on `BREAKING CHANGE:`; `patch` / `minor` /
+   `major` force the bump kind; `custom` uses the version you typed).
+2. `update_changelog` writes the computed version into `pyproject.toml` and
+   the rendered changelog into `CHANGELOG.md`, then commits and pushes the
+   result to `main`. The pushed commit's SHA becomes `changelog_commitish`.
+3. `create_github_release` creates tag `vX.Y.Z` pointing at
+   `changelog_commitish` and the GitHub release with auto-generated notes.
+4. `publish_to_pypi` checks out `changelog_commitish`, builds the wheel from
+   the post-bump `pyproject.toml`, and uploads via OIDC.
 
-**Edge case to know about:** `release.yml` does **not** itself bump
-`pyproject.toml` or update `CHANGELOG.md` on stable releases. Both updates
-happen exclusively through `pre_release.yml`. If a stable release is cut
-without any qualifying push having run `pre_release.yml` in between (for
-example, only `docs:` / `ci:` commits since the last stable, or the very
-first release ever), `pyproject.toml` will not reflect the new version that
-the workflow tags and creates a release for, and the resulting wheel will
-have the old version in its metadata while the git tag claims the new one.
-
-For the first release specifically (no prior tags, `pyproject.toml` ships
-at `0.1.0` from initial setup) this works out cleanly when you pick
-`release_type: custom` with `custom_version: 0.1.0`. After that, let
-`pre_release.yml` do its job and stable releases will stay consistent.
+Because every artifact (tag, GitHub release, wheel) is anchored to
+`changelog_commitish`, there is no possibility of drift between what the
+release page says and what's on PyPI, even if another push lands on `main`
+mid-workflow.
 
 ### Notes
 
