@@ -39,10 +39,10 @@ jobs:
       changelog: ${{ steps.release_metadata.outputs.changelog }}
       release_notes: ${{ steps.release_metadata.outputs.release_notes }}
     steps:
-      - name: Verify running on main
-        if: github.ref != 'refs/heads/main'
+      - name: Verify running on main in the apify org
+        if: github.ref != 'refs/heads/main' || !startsWith(github.repository, 'apify/')
         run: |
-          echo "::error title=Wrong branch::Releases must run from main. Current ref: ${{ github.ref }}"
+          echo "::error title=Wrong branch or repository::Releases must run from main in an apify/ repository. ref=${{ github.ref }} repo=${{ github.repository }}"
           exit 1
 
       - name: Validate inputs
