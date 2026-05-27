@@ -64,9 +64,12 @@ and the changelog is generated from these prefixes via [git-cliff](https://git-c
 
 ### Beta releases
 
-`pre_release.yml` runs automatically on every push to `main` (skipping
-`docs:` and `ci:` commits). It bumps the version, updates the changelog, and
-publishes a `X.Y.Zb<N>` beta to PyPI. No manual action needed.
+Beta releases are also triggered manually, from **Actions** >
+[**Create a pre-release**](https://github.com/apify/strands-apify/actions/workflows/pre_release.yml)
+> **Run workflow**. The workflow runs the same checks as the stable release,
+bumps to the next beta version, updates the changelog, and publishes a
+`X.Y.Zb<N>` wheel to PyPI. (Automatic beta-on-push-to-main may be enabled
+later; for now both stable and beta releases are manual.)
 
 ### Notes
 
