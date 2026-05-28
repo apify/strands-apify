@@ -73,7 +73,7 @@ later; for now both stable and beta releases are manual.)
 
 ### Notes
 
-- Do not create tags or releases manually — the workflow handles both.
+- Do not create tags or releases manually, the workflow handles both.
 - Release notes come from conventional commit subjects via git-cliff. You can
   edit the GitHub release body afterward if you want hand-curated notes.
 
