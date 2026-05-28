@@ -1,8 +1,25 @@
-name: Publish release
+name: Create a release
 
 on:
-  release:
-    types: [published]
+  # Trigger a stable version release via GitHub's UI, with the ability to specify the type of release.
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: Release type
+        required: true
+        type: choice
+        default: auto
+        options:
+          - auto
+          - custom
+          - patch
+          - minor
+          - major
+      custom_version:
+        description: The custom version to bump to (only for "custom" type)
+        required: false
+        type: string
+        default: ""
 
 concurrency:
   group: release
@@ -10,50 +27,57 @@ concurrency:
 
 jobs:
   release_metadata:
-    if: ${{ !github.event.release.prerelease }}
     name: Prepare release metadata
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read  # git-cliff enhances release notes with PR links via GITHUB_TOKEN.
+      issues: read         # git-cliff enhances release notes with issue links via GITHUB_TOKEN.
     outputs:
-      version_number: ${{ steps.version.outputs.version_number }}
+      version_number: ${{ steps.release_metadata.outputs.version_number }}
+      tag_name: ${{ steps.release_metadata.outputs.tag_name }}
       changelog: ${{ steps.release_metadata.outputs.changelog }}
+      release_notes: ${{ steps.release_metadata.outputs.release_notes }}
     steps:
-      - name: Extract version from release tag
-        id: version
+      - name: Verify running on main in the apify org
+        if: github.ref != 'refs/heads/main' || !startsWith(github.repository, 'apify/')
         run: |
-          TAG_NAME="${{ github.event.release.tag_name }}"
-          VERSION="${TAG_NAME#v}"
-          echo "version_number=${VERSION}" >> $GITHUB_OUTPUT
+          echo "::error title=Wrong branch or repository::Releases must run from main in an apify/ repository. ref=${{ github.ref }} repo=${{ github.repository }}"
+          exit 1
+
+      - name: Validate inputs
+        if: inputs.release_type == 'custom' && inputs.custom_version == ''
+        run: |
+          echo "::error title=Missing custom_version::release_type is 'custom' but custom_version is empty. Provide a custom version (e.g. 0.1.0) and re-run the workflow."
+          exit 1
 
       - uses: apify/actions/git-cliff-release@v1.1.2
         name: Prepare release metadata
         id: release_metadata
         with:
-          release_type: custom
-          custom_version: ${{ steps.version.outputs.version_number }}
+          release_type: ${{ inputs.release_type }}
+          custom_version: ${{ inputs.custom_version }}
           existing_changelog_path: CHANGELOG.md
 
   lint_check:
-    if: ${{ !github.event.release.prerelease }}
     name: Lint check
-    uses: apify/workflows/.github/workflows/python_lint_check.yaml@47c305bdd5647f56c224ef9257804493e0912698
+    uses: apify/workflows/.github/workflows/python_lint_check.yaml@v0.45.0
     with:
       python_versions: '["3.10", "3.11", "3.12", "3.13"]'
       install_command: uv pip install --system -e ".[dev]"
       lint_command: ruff check src tests && ruff format --check src tests
 
   type_check:
-    if: ${{ !github.event.release.prerelease }}
     name: Type check
-    uses: apify/workflows/.github/workflows/python_type_check.yaml@47c305bdd5647f56c224ef9257804493e0912698
+    uses: apify/workflows/.github/workflows/python_type_check.yaml@v0.45.0
     with:
       python_versions: '["3.10", "3.11", "3.12", "3.13"]'
       install_command: uv pip install --system -e ".[dev]"
       type_check_command: mypy src
 
   unit_tests:
-    if: ${{ !github.event.release.prerelease }}
     name: Unit tests
-    uses: apify/workflows/.github/workflows/python_unit_tests.yaml@47c305bdd5647f56c224ef9257804493e0912698
+    uses: apify/workflows/.github/workflows/python_unit_tests.yaml@v0.45.0
     with:
       python_versions: '["3.10", "3.11", "3.12", "3.13"]'
       operating_systems: '["ubuntu-latest"]'
@@ -63,20 +87,37 @@ jobs:
   update_changelog:
     name: Update changelog
     needs: [release_metadata, lint_check, type_check, unit_tests]
-    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@47c305bdd5647f56c224ef9257804493e0912698
+    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@v0.45.0
     with:
       version_number: ${{ needs.release_metadata.outputs.version_number }}
       changelog: ${{ needs.release_metadata.outputs.changelog }}
     secrets:
       APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN: ${{ secrets.APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN }}
 
-  publish_to_pypi:
-    name: Publish to PyPI
+  create_github_release:
+    name: Create github release
     needs: [release_metadata, update_changelog]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      id-token: write
+      contents: write  # Required to create the tag and the GitHub release.
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release_metadata.outputs.tag_name }}
+          name: ${{ needs.release_metadata.outputs.version_number }}
+          body: ${{ needs.release_metadata.outputs.release_notes }}
+          target_commitish: ${{ needs.update_changelog.outputs.changelog_commitish }}
+
+  publish_to_pypi:
+    name: Publish to PyPI
+    needs: [release_metadata, update_changelog, create_github_release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC authentication.
     environment:
       name: pypi
       url: https://pypi.org/project/strands-apify
@@ -84,6 +125,8 @@ jobs:
       - name: Prepare distribution
         uses: apify/actions/prepare-pypi-distribution@v1.1.2
         with:
+          # Build from the exact post-bump commit so the wheel's version metadata
+          # matches the tag created by create_github_release.
           ref: ${{ needs.update_changelog.outputs.changelog_commitish }}
           package_name: strands-apify
           is_prerelease: ""
@@ -91,5 +134,6 @@ jobs:
           install_command: uv pip install --system -e ".[dev]"
           build_command: hatch build
 
+      # Publishes the package to PyPI using PyPA official GitHub action with OIDC authentication.
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

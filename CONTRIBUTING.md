@@ -54,9 +54,29 @@ and the changelog is generated from these prefixes via [git-cliff](https://git-c
 
 ## Releases
 
-Releases are cut from the
-[Actions tab](https://github.com/apify/strands-apify/actions/workflows/release.yml)
-by manually triggering the **Create a release** workflow.
+### Stable releases
+
+1. Go to **Actions** > [**Create a release**](https://github.com/apify/strands-apify/actions/workflows/release.yml) > **Run workflow**.
+2. Pick a release type (`auto` recommended, or `patch`/`minor`/`major`/`custom`).
+3. Click **Run workflow**. The workflow runs checks, creates a tag + GitHub
+   release, bumps `pyproject.toml` and `CHANGELOG.md`, and publishes to
+   [PyPI](https://pypi.org/project/strands-apify/).
+
+### Beta releases
+
+Beta releases are also triggered manually, from **Actions** >
+[**Create a pre-release**](https://github.com/apify/strands-apify/actions/workflows/pre_release.yml)
+> **Run workflow**. The workflow runs the same checks as the stable release,
+bumps to the next beta version, updates the changelog, and publishes a
+`X.Y.Zb<N>` wheel to PyPI. (Automatic beta-on-push-to-main may be enabled
+later; for now both stable and beta releases are manual.)
+
+### Notes
+
+- Do not create tags or releases manually, the workflow handles both.
+- Release notes come from conventional commit subjects via git-cliff. You can
+  edit the GitHub release body afterward if you want hand-curated notes.
+
 
 ## Security issue notifications
 

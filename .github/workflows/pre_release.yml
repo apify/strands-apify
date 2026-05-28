@@ -1,12 +1,9 @@
 name: Create a pre-release
 
 on:
-  # Trigger a beta version release (pre-release) on push to the main branch.
-  push:
-    branches:
-      - main
-    tags-ignore:
-      - "**" # Ignore all tags to prevent duplicate builds when tags are pushed.
+  # Trigger a beta version (pre-release) manually from the Actions tab.
+  # Kept manual for now; may switch to automatic on push to main in the future.
+  workflow_dispatch:
 
 concurrency:
   group: release
@@ -14,14 +11,23 @@ concurrency:
 
 jobs:
   release_metadata:
-    if: "!startsWith(github.event.head_commit.message, 'docs') && !startsWith(github.event.head_commit.message, 'ci') && startsWith(github.repository, 'apify/')"
     name: Prepare release metadata
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read  # git-cliff enhances release notes with PR links via GITHUB_TOKEN.
+      issues: read         # git-cliff enhances release notes with issue links via GITHUB_TOKEN.
     outputs:
       version_number: ${{ steps.release_metadata.outputs.version_number }}
       tag_name: ${{ steps.release_metadata.outputs.tag_name }}
       changelog: ${{ steps.release_metadata.outputs.changelog }}
     steps:
+      - name: Verify running on main in the apify org
+        if: github.ref != 'refs/heads/main' || !startsWith(github.repository, 'apify/')
+        run: |
+          echo "::error title=Wrong branch or repository::Pre-releases must run from main in an apify/ repository. ref=${{ github.ref }} repo=${{ github.repository }}"
+          exit 1
+
       - uses: apify/actions/git-cliff-release@v1.1.2
         id: release_metadata
         name: Prepare release metadata
@@ -29,24 +35,38 @@ jobs:
           release_type: prerelease
           existing_changelog_path: CHANGELOG.md
 
-  # If github.ref points to a [ci skip] commit, this workflow won't run.
-  # Otherwise, these checks will be launched from the `run_code_checks` workflow.
-  wait_for_checks:
-    name: Wait for code checks to pass
-    runs-on: ubuntu-latest
-    steps:
-      - uses: lewagon/wait-on-check-action@v1.3.4
-        with:
-          ref: ${{ github.ref }}
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          check-regexp: "(check|test)"
-          ignore-checks: Wait for code checks to pass
-          wait-interval: 5
+  lint_check:
+    name: Lint check
+    uses: apify/workflows/.github/workflows/python_lint_check.yaml@v0.45.0
+    with:
+      python_versions: '["3.10", "3.11", "3.12", "3.13"]'
+      install_command: uv pip install --system -e ".[dev]"
+      lint_command: ruff check src tests && ruff format --check src tests
+
+  type_check:
+    name: Type check
+    uses: apify/workflows/.github/workflows/python_type_check.yaml@v0.45.0
+    with:
+      python_versions: '["3.10", "3.11", "3.12", "3.13"]'
+      install_command: uv pip install --system -e ".[dev]"
+      type_check_command: mypy src
+
+  unit_tests:
+    name: Unit tests
+    uses: apify/workflows/.github/workflows/python_unit_tests.yaml@v0.45.0
+    with:
+      python_versions: '["3.10", "3.11", "3.12", "3.13"]'
+      operating_systems: '["ubuntu-latest"]'
+      install_command: uv pip install --system -e ".[dev]"
+      run_tests_command: pytest -q
 
   update_changelog:
     name: Update changelog
-    needs: [release_metadata, wait_for_checks]
-    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@47c305bdd5647f56c224ef9257804493e0912698
+    needs: [release_metadata, lint_check, type_check, unit_tests]
+    # Bumps pyproject.toml to the next base version and overwrites CHANGELOG.md, then
+    # commits and pushes to main via apify/actions/signed-commit (commit carries
+    # [skip ci]). Works because workflow_dispatch from main keeps HEAD on the branch.
+    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@v0.45.0
     with:
       version_number: ${{ needs.release_metadata.outputs.version_number }}
       changelog: ${{ needs.release_metadata.outputs.changelog }}
@@ -58,8 +78,8 @@ jobs:
     needs: [release_metadata, update_changelog]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      id-token: write # Required for OIDC authentication.
+      contents: read
+      id-token: write  # Required for OIDC authentication.
     environment:
       name: pypi
       url: https://pypi.org/project/strands-apify
@@ -67,12 +87,16 @@ jobs:
       - name: Prepare distribution
         uses: apify/actions/prepare-pypi-distribution@v1.1.2
         with:
+          # is_prerelease="yes" makes prepare-pypi-distribution compute the next beta
+          # number from PyPI and build X.Y.Zb<N>. Build from the post-bump commit so the
+          # base version matches what update_changelog committed.
+          ref: ${{ needs.update_changelog.outputs.changelog_commitish }}
           package_name: strands-apify
           is_prerelease: "yes"
           version_number: ${{ needs.release_metadata.outputs.version_number }}
-          ref: ${{ needs.update_changelog.outputs.changelog_commitish }}
           install_command: uv pip install --system -e ".[dev]"
           build_command: hatch build
+
       # Publishes the package to PyPI using PyPA official GitHub action with OIDC authentication.
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
