@@ -87,7 +87,7 @@ jobs:
   update_changelog:
     name: Update changelog
     needs: [release_metadata, lint_check, type_check, unit_tests]
-    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@v0.45.0
+    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@v0.45.1
     with:
       version_number: ${{ needs.release_metadata.outputs.version_number }}
       changelog: ${{ needs.release_metadata.outputs.changelog }}
