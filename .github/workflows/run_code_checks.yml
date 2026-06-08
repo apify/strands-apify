@@ -18,7 +18,7 @@ jobs:
 
   type_check:
     name: Type check
-    uses: apify/workflows/.github/workflows/python_type_check.yaml@v0.45.0
+    uses: apify/workflows/.github/workflows/python_type_check.yaml@v0.45.1
     with:
       python_versions: '["3.10", "3.11", "3.12", "3.13"]'
       install_command: uv pip install --system -e ".[dev]"
