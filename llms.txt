@@ -14,7 +14,7 @@ Install from PyPI:
 pip install strands-apify
 ```
 
-Set the required Apify token (get one at https://console.apify.com/account/integrations):
+Set the required Apify token (get one at https://console.apify.com/settings/integrations?utm_source=strands-apify&utm_medium=integrations):
 
 ```bash
 export APIFY_TOKEN=your_apify_token_here
