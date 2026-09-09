@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2](https://github.com/apify/strands-apify/releases/tag/v0.1.2) (2026-09-09)
+
+
 ## [0.1.0](https://github.com/apify/strands-apify/releases/tag/v0.1.0) (2026-05-28)
 
 ### 🚀 Features
