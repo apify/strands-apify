@@ -11,6 +11,8 @@ This package gives Strands agents access to [Apify Actors](https://apify.com/sto
 
 ## Installation
 
+Requires Python 3.11 or newer.
+
 ```bash
 pip install strands-apify
 ```
