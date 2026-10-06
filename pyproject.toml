@@ -7,7 +7,7 @@ name = "strands-apify"
 version = "0.1.2"
 description = "Apify web scraping, social media, search and automation tools for Strands Agents SDK"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
 authors = [
     {name = "Apify", email = "support@apify.com"}
@@ -18,17 +18,14 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     "strands-agents>=1.0.0",
-    # Upper bound <3.0.0: apify-client 3.0 (released 2026-05-20) is a major
-    # rewrite (Run dataclass instead of dict, new ApifyApiError signature,
-    # renamed timeout kwarg). Migrate in a follow-up.
-    "apify-client>=2.5.0,<3.0.0",
+    "apify-client>=3.0.0,<4.0.0",
     "rich>=13.0.0",
 ]
 
@@ -94,7 +91,7 @@ select = [
     "F",     # pyflakes
     "I",     # isort
     "B",     # bugbear
-    "UP",    # pyupgrade (Python 3.10+ idioms — auto-fixes Dict→dict, Optional→| None, etc.)
+    "UP",    # pyupgrade (Python 3.11+ idioms — auto-fixes Dict→dict, Optional→| None, etc.)
     "SIM",   # simplifications
     "C4",    # comprehensions
     "PIE",   # misc
@@ -104,7 +101,7 @@ select = [
 ]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 strict = true
 ignore_missing_imports = true
 
