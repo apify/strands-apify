@@ -9,31 +9,38 @@ imported explicitly by test modules that need them.
 from unittest.mock import MagicMock
 
 import pytest
+from apify_client._models import Run
 
-MOCK_ACTOR_RUN = {
-    "id": "run-HG7ml5fB1hCp8YEBA",
-    "actId": "actor~my-scraper",
-    "userId": "user-abc123",
-    "startedAt": "2026-03-15T14:30:00.000Z",
-    "finishedAt": "2026-03-15T14:35:22.000Z",
-    "status": "SUCCEEDED",
-    "statusMessage": "Actor finished successfully",
-    "defaultDatasetId": "dataset-WkC9gct8rq1uR5vDZ",
-    "defaultKeyValueStoreId": "kvs-Xb3A8gct8rq1uR5vD",
-    "buildNumber": "1.2.3",
-}
+# Shaped like a real `GET /v2/actor-runs/{id}` response and validated into the
+# `Run` model that apify-client 3.x returns from `.call()`, so a regression to
+# dict-style access in `utils.py` fails here instead of only in production.
+MOCK_ACTOR_RUN = Run.model_validate(
+    {
+        "id": "run-HG7ml5fB1hCp8YEBA",
+        "actId": "actor~my-scraper",
+        "userId": "user-abc123",
+        "startedAt": "2026-03-15T14:30:00.000Z",
+        "finishedAt": "2026-03-15T14:35:22.000Z",
+        "status": "SUCCEEDED",
+        "statusMessage": "Actor finished successfully",
+        "meta": {"origin": "API"},
+        "stats": {},
+        "options": {"build": "latest", "timeoutSecs": 300, "memoryMbytes": 1024, "diskMbytes": 2048},
+        "buildId": "build-Zx8Kq2fB1hCp8YEBA",
+        "buildNumber": "1.2.3",
+        "defaultDatasetId": "dataset-WkC9gct8rq1uR5vDZ",
+        "defaultKeyValueStoreId": "kvs-Xb3A8gct8rq1uR5vD",
+        "defaultRequestQueueId": "rq-Pq7Lm2gct8rq1uR5v",
+    }
+)
 
-MOCK_FAILED_RUN = {
-    **MOCK_ACTOR_RUN,
-    "status": "FAILED",
-    "statusMessage": "Actor failed with an error",
-}
+MOCK_FAILED_RUN = MOCK_ACTOR_RUN.model_copy(
+    update={"status": "FAILED", "status_message": "Actor failed with an error"},
+)
 
-MOCK_TIMED_OUT_RUN = {
-    **MOCK_ACTOR_RUN,
-    "status": "TIMED-OUT",
-    "statusMessage": "Actor run timed out",
-}
+MOCK_TIMED_OUT_RUN = MOCK_ACTOR_RUN.model_copy(
+    update={"status": "TIMED-OUT", "status_message": "Actor run timed out"},
+)
 
 MOCK_DATASET_ITEMS = [
     {"url": "https://example.com/product/1", "title": "Widget A", "price": 19.99, "currency": "USD"},
