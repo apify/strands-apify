@@ -113,9 +113,8 @@ def _success_result(text: str, panel_body: str, panel_title: str) -> dict[str, A
 def _check_run_status(actor_run: "Run", label: str) -> None:
     """Raise RuntimeError if the Actor run did not succeed.
 
-    Includes the Apify-provided ``statusMessage`` in the error when present so
-    callers can see why a run failed without having to look up the run in the
-    Apify Console.
+    Includes the run's `status_message` in the error when present so callers can see why a run failed without having
+    to look up the run in the Apify Console.
     """
     status = actor_run.status
     if status == "SUCCEEDED":

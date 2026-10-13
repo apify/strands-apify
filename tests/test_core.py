@@ -28,9 +28,8 @@ MOCK_SCRAPED_ITEM = {
 def _make_apify_api_error(status_code: int, message: str) -> Exception:
     """Create an ApifyApiError through its real constructor from a fake HTTP response.
 
-    In apify-client 3.x the constructor dispatches on ``response.status_code`` to a
-    status subclass (e.g. 401 -> UnauthorizedError) and reads the message from the
-    JSON error body, so the fake response has to provide both.
+    The constructor dispatches on `response.status_code` to a status subclass (e.g. 401 -> `UnauthorizedError`) and
+    reads the message from the JSON error body, so the fake response has to provide both.
     """
     from apify_client.errors import ApifyApiError
 
@@ -117,7 +116,7 @@ def test_run_actor_with_memory(mock_apify_env, mock_apify_client):
 
 
 def test_run_actor_passes_run_timeout(mock_apify_env, mock_apify_client):
-    """timeout_secs is forwarded as apify-client 3.x run_timeout (a timedelta)."""
+    """Actor `timeout_secs` is forwarded to `.call()` as a `run_timeout` timedelta."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_run_actor(actor_id="actor/my-scraper", timeout_secs=42)
 
@@ -127,7 +126,7 @@ def test_run_actor_passes_run_timeout(mock_apify_env, mock_apify_client):
 
 
 def test_run_task_passes_run_timeout(mock_apify_env, mock_apify_client):
-    """Task timeout_secs is forwarded as apify-client 3.x run_timeout (a timedelta)."""
+    """Task `timeout_secs` is forwarded to `.call()` as a `run_timeout` timedelta."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_run_task(task_id="user/my-task", timeout_secs=42)
 
@@ -137,7 +136,7 @@ def test_run_task_passes_run_timeout(mock_apify_env, mock_apify_client):
 
 
 def test_scrape_url_passes_run_timeout(mock_apify_env, mock_apify_client):
-    """Scrape timeout_secs is forwarded as apify-client 3.x run_timeout (a timedelta)."""
+    """Scrape `timeout_secs` is forwarded to `.call()` as a `run_timeout` timedelta."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_scrape_url(url="https://example.com", timeout_secs=42)
 
