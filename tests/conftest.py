@@ -11,9 +11,7 @@ from unittest.mock import MagicMock
 import pytest
 from apify_client._models import Run
 
-# Shaped like a real `GET /v2/actor-runs/{id}` response and validated into the
-# `Run` model that apify-client 3.x returns from `.call()`, so a regression to
-# dict-style access in `utils.py` fails here instead of only in production.
+# Shaped like a real `GET /v2/actor-runs/{id}` response and validated into the `Run` model that `.call()` returns.
 MOCK_ACTOR_RUN = Run.model_validate(
     {
         "id": "run-HG7ml5fB1hCp8YEBA",
@@ -24,7 +22,8 @@ MOCK_ACTOR_RUN = Run.model_validate(
         "status": "SUCCEEDED",
         "statusMessage": "Actor finished successfully",
         "meta": {"origin": "API"},
-        "stats": {},
+        "generalAccess": "FOLLOW_USER_SETTING",
+        "stats": {"computeUnits": 0.01, "restartCount": 0, "resurrectCount": 0},
         "options": {"build": "latest", "timeoutSecs": 300, "memoryMbytes": 1024, "diskMbytes": 2048},
         "buildId": "build-Zx8Kq2fB1hCp8YEBA",
         "buildNumber": "1.2.3",
