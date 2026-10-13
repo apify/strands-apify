@@ -248,10 +248,9 @@ class ApifyToolClient:
             memory_mbytes=memory_mbytes,
             build=build,
         )
-        dataset_id = run_metadata["dataset_id"]
-        if not dataset_id:
-            raise RuntimeError(f"Actor {actor_id} run has no default dataset.")
-        items = self.get_dataset_items(dataset_id=dataset_id, limit=dataset_items_limit, offset=dataset_items_offset)
+        items = self.get_dataset_items(
+            dataset_id=run_metadata["dataset_id"], limit=dataset_items_limit, offset=dataset_items_offset
+        )
         return {**run_metadata, "items": items}
 
     def scrape_url(
@@ -282,10 +281,7 @@ class ApifyToolClient:
             raise RuntimeError("Website Content Crawler returned no run data (possible wait timeout).")
         _check_run_status(actor_run, "Website Content Crawler")
 
-        dataset_id = actor_run.default_dataset_id
-        if not dataset_id:
-            raise RuntimeError("Website Content Crawler run has no default dataset.")
-        result = self.client.dataset(dataset_id).list_items(limit=1)
+        result = self.client.dataset(actor_run.default_dataset_id).list_items(limit=1)
         items = list(result.items)
 
         if not items:
@@ -344,8 +340,7 @@ class ApifyToolClient:
             timeout_secs=timeout_secs,
             memory_mbytes=memory_mbytes,
         )
-        dataset_id = run_metadata["dataset_id"]
-        if not dataset_id:
-            raise RuntimeError(f"Task {task_id} run has no default dataset.")
-        items = self.get_dataset_items(dataset_id=dataset_id, limit=dataset_items_limit, offset=dataset_items_offset)
+        items = self.get_dataset_items(
+            dataset_id=run_metadata["dataset_id"], limit=dataset_items_limit, offset=dataset_items_offset
+        )
         return {**run_metadata, "items": items}
