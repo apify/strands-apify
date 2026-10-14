@@ -1,10 +1,11 @@
 """Tests for the Apify core tools."""
 
 import json
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
-from conftest import MOCK_ACTOR_RUN, MOCK_FAILED_RUN, MOCK_TIMED_OUT_RUN
+from conftest import MOCK_FAILED_RUN, MOCK_TIMED_OUT_RUN
 
 from strands_apify import core as apify_core
 from strands_apify.core import (
@@ -25,14 +26,16 @@ MOCK_SCRAPED_ITEM = {
 
 
 def _make_apify_api_error(status_code: int, message: str) -> Exception:
-    """Create an ApifyApiError instance for testing without calling its real __init__."""
+    """Create an ApifyApiError through its real constructor from a fake HTTP response.
+
+    The constructor dispatches on `response.status_code` to a status subclass (e.g. 401 -> `UnauthorizedError`) and
+    reads the message from the JSON error body, so the fake response has to provide both.
+    """
     from apify_client.errors import ApifyApiError
 
-    error = ApifyApiError.__new__(ApifyApiError)
-    Exception.__init__(error, message)
-    error.status_code = status_code
-    error.message = message
-    return error
+    response = MagicMock(status_code=status_code, text=message)
+    response.json.return_value = {"error": {"type": "test-error", "message": message}}
+    return ApifyApiError(response, attempt=1)
 
 
 # --- Module import ---
@@ -60,7 +63,7 @@ def test_client_uses_env_token(mock_apify_env):
         ApifyToolClient()
         MockClient.assert_called_once_with(
             "apify_api_test-token-12345",
-            headers={"x-apify-integration-platform": "strands-apify"},
+            headers={"x-apify-integration-platform": "strands-agents"},
         )
 
 
@@ -77,8 +80,8 @@ def test_run_actor_success(mock_apify_env, mock_apify_client):
     assert data["run_id"] == "run-HG7ml5fB1hCp8YEBA"
     assert data["status"] == "SUCCEEDED"
     assert data["dataset_id"] == "dataset-WkC9gct8rq1uR5vDZ"
-    assert "started_at" in data
-    assert "finished_at" in data
+    assert data["started_at"] == "2026-03-15T14:30:00+00:00"
+    assert data["finished_at"] == "2026-03-15T14:35:22+00:00"
     mock_apify_client.actor.assert_called_once_with("actor/my-scraper")
 
 
@@ -112,6 +115,36 @@ def test_run_actor_with_memory(mock_apify_env, mock_apify_client):
     assert call_kwargs["memory_mbytes"] == 512
 
 
+def test_run_actor_passes_run_timeout(mock_apify_env, mock_apify_client):
+    """Actor `timeout_secs` is forwarded to `.call()` as a `run_timeout` timedelta."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_run_actor(actor_id="actor/my-scraper", timeout_secs=42)
+
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    assert call_kwargs["run_timeout"] == timedelta(seconds=42)
+    assert "timeout_secs" not in call_kwargs
+
+
+def test_run_task_passes_run_timeout(mock_apify_env, mock_apify_client):
+    """Task `timeout_secs` is forwarded to `.call()` as a `run_timeout` timedelta."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_run_task(task_id="user/my-task", timeout_secs=42)
+
+    call_kwargs = mock_apify_client.task.return_value.call.call_args.kwargs
+    assert call_kwargs["run_timeout"] == timedelta(seconds=42)
+    assert "timeout_secs" not in call_kwargs
+
+
+def test_scrape_url_passes_run_timeout(mock_apify_env, mock_apify_client):
+    """Scrape `timeout_secs` is forwarded to `.call()` as a `run_timeout` timedelta."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_scrape_url(url="https://example.com", timeout_secs=42)
+
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    assert call_kwargs["run_timeout"] == timedelta(seconds=42)
+    assert "timeout_secs" not in call_kwargs
+
+
 def test_run_actor_failure(mock_apify_env, mock_apify_client):
     """Actor run returns error dict when Actor fails and surfaces Apify's statusMessage."""
     mock_apify_client.actor.return_value.call.return_value = MOCK_FAILED_RUN
@@ -128,8 +161,7 @@ def test_run_actor_failure(mock_apify_env, mock_apify_client):
 
 def test_run_actor_failure_without_status_message(mock_apify_env, mock_apify_client):
     """Failure error message still works when the Apify run omits statusMessage."""
-    run_without_message = {**MOCK_FAILED_RUN}
-    run_without_message.pop("statusMessage", None)
+    run_without_message = MOCK_FAILED_RUN.model_copy(update={"status_message": None})
     mock_apify_client.actor.return_value.call.return_value = run_without_message
 
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
@@ -258,18 +290,6 @@ def test_run_actor_and_get_dataset_success(mock_apify_env, mock_apify_client):
     assert data["items"][0]["title"] == "Widget A"
 
 
-def test_run_actor_and_get_dataset_no_dataset_id(mock_apify_env, mock_apify_client):
-    """Combined tool returns error when the Actor run has no default dataset."""
-    run_no_dataset = {**MOCK_ACTOR_RUN, "defaultDatasetId": None}
-    mock_apify_client.actor.return_value.call.return_value = run_no_dataset
-
-    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
-        result = apify_run_actor_and_get_dataset(actor_id="actor/my-scraper")
-
-    assert result["status"] == "error"
-    assert "no default dataset" in result["content"][0]["text"]
-
-
 def test_run_actor_and_get_dataset_actor_failure(mock_apify_env, mock_apify_client):
     """Combined tool returns error dict when the Actor fails."""
     mock_apify_client.actor.return_value.call.return_value = MOCK_FAILED_RUN
@@ -369,18 +389,6 @@ def test_run_task_and_get_dataset_success(mock_apify_env, mock_apify_client):
     assert data["items"][0]["title"] == "Widget A"
 
 
-def test_run_task_and_get_dataset_no_dataset_id(mock_apify_env, mock_apify_client):
-    """Combined task tool returns error when the task run has no default dataset."""
-    run_no_dataset = {**MOCK_ACTOR_RUN, "defaultDatasetId": None}
-    mock_apify_client.task.return_value.call.return_value = run_no_dataset
-
-    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
-        result = apify_run_task_and_get_dataset(task_id="user~my-task")
-
-    assert result["status"] == "error"
-    assert "no default dataset" in result["content"][0]["text"]
-
-
 def test_run_task_and_get_dataset_task_failure(mock_apify_env, mock_apify_client):
     """Combined task tool returns error dict when the task fails."""
     mock_apify_client.task.return_value.call.return_value = MOCK_FAILED_RUN
@@ -418,18 +426,6 @@ def test_scrape_url_none_response(mock_apify_env, mock_apify_client):
 
     assert result["status"] == "error"
     assert "no run data" in result["content"][0]["text"]
-
-
-def test_scrape_url_no_dataset_id(mock_apify_env, mock_apify_client):
-    """Scrape URL returns error when the crawler run has no default dataset."""
-    run_no_dataset = {**MOCK_ACTOR_RUN, "defaultDatasetId": None}
-    mock_apify_client.actor.return_value.call.return_value = run_no_dataset
-
-    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
-        result = apify_scrape_url(url="https://example.com")
-
-    assert result["status"] == "error"
-    assert "no default dataset" in result["content"][0]["text"]
 
 
 def test_scrape_url_no_content(mock_apify_env, mock_apify_client):

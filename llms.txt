@@ -14,7 +14,7 @@ Install from PyPI:
 pip install strands-apify
 ```
 
-Set the required Apify token (get one at https://console.apify.com/settings/integrations?utm_source=strands-apify&utm_medium=integrations):
+Set the required Apify token (get one at https://console.apify.com/settings/integrations?utm_source=strands-agents&utm_medium=integrations):
 
 ```bash
 export APIFY_TOKEN=your_apify_token_here
@@ -123,7 +123,7 @@ never raise out, so the agent's reasoning loop is not interrupted.
   overwhelm an LLM. Prefer the focused presets or individual imports.
 - Each tool calls Apify Actors synchronously via the `apify-client` package and
   blocks until the run completes (or hits `timeout_secs`).
-- The package sends `x-apify-integration-platform: strands-apify` on every API
+- The package sends `x-apify-integration-platform: strands-agents` on every API
   request for attribution.
 
 ## Links

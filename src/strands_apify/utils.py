@@ -2,12 +2,17 @@
 
 import logging
 import os
-from typing import Any, Literal, get_args
+from datetime import timedelta
+from typing import TYPE_CHECKING, Any, Literal, get_args
 from urllib.parse import urlparse
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+
+if TYPE_CHECKING:
+    # apify-client 3.x exports its response models only from this private module.
+    from apify_client._models import Run
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +45,7 @@ try:
 except ImportError:
     HAS_APIFY_CLIENT = False
 
-TRACKING_HEADER = {"x-apify-integration-platform": "strands-apify"}
+TRACKING_HEADER = {"x-apify-integration-platform": "strands-agents"}
 ERROR_PANEL_TITLE = "[bold red]Apify Error[/bold red]"
 DEFAULT_TIMEOUT_SECS = 300
 DEFAULT_SCRAPE_TIMEOUT_SECS = 120
@@ -105,19 +110,17 @@ def _success_result(text: str, panel_body: str, panel_title: str) -> dict[str, A
 # These are package-private (underscore-prefixed) but used across submodules.
 
 
-def _check_run_status(actor_run: dict[str, Any], label: str) -> None:
+def _check_run_status(actor_run: "Run", label: str) -> None:
     """Raise RuntimeError if the Actor run did not succeed.
 
-    Includes the Apify-provided ``statusMessage`` in the error when present so
-    callers can see why a run failed without having to look up the run in the
-    Apify Console.
+    Includes the run's `status_message` in the error when present so callers can see why a run failed without having
+    to look up the run in the Apify Console.
     """
-    status = actor_run.get("status", "UNKNOWN")
+    status = actor_run.status
     if status == "SUCCEEDED":
         return
-    run_id = actor_run.get("id", "N/A")
-    status_msg = actor_run.get("statusMessage")
-    parts = [f"{label} finished with status {status}", f"Run ID: {run_id}"]
+    status_msg = actor_run.status_message
+    parts = [f"{label} finished with status {status}", f"Run ID: {actor_run.id}"]
     if status_msg:
         parts.append(f"Message: {status_msg}")
     raise RuntimeError(". ".join(parts))
@@ -168,7 +171,7 @@ class ApifyToolClient:
             raise ValueError(
                 "APIFY_TOKEN environment variable is not set. "
                 "Get your token at https://console.apify.com/settings/integrations"
-                "?utm_source=strands-apify&utm_medium=integrations"
+                "?utm_source=strands-agents&utm_medium=integrations"
             )
         self.client: ApifyClient = ApifyClient(token, headers=TRACKING_HEADER)
 
@@ -188,7 +191,7 @@ class ApifyToolClient:
 
         call_kwargs: dict[str, Any] = {
             "run_input": run_input if run_input is not None else {},
-            "timeout_secs": timeout_secs,
+            "run_timeout": timedelta(seconds=timeout_secs),
             "logger": None,
         }
         if memory_mbytes is not None:
@@ -202,11 +205,11 @@ class ApifyToolClient:
         _check_run_status(actor_run, f"Actor {actor_id}")
 
         return {
-            "run_id": actor_run.get("id"),
-            "status": actor_run.get("status"),
-            "dataset_id": actor_run.get("defaultDatasetId"),
-            "started_at": actor_run.get("startedAt"),
-            "finished_at": actor_run.get("finishedAt"),
+            "run_id": actor_run.id,
+            "status": actor_run.status,
+            "dataset_id": actor_run.default_dataset_id,
+            "started_at": actor_run.started_at.isoformat(),
+            "finished_at": actor_run.finished_at.isoformat() if actor_run.finished_at else None,
         }
 
     def get_dataset_items(
@@ -244,10 +247,9 @@ class ApifyToolClient:
             memory_mbytes=memory_mbytes,
             build=build,
         )
-        dataset_id = run_metadata["dataset_id"]
-        if not dataset_id:
-            raise RuntimeError(f"Actor {actor_id} run has no default dataset.")
-        items = self.get_dataset_items(dataset_id=dataset_id, limit=dataset_items_limit, offset=dataset_items_offset)
+        items = self.get_dataset_items(
+            dataset_id=run_metadata["dataset_id"], limit=dataset_items_limit, offset=dataset_items_offset
+        )
         return {**run_metadata, "items": items}
 
     def scrape_url(
@@ -271,17 +273,14 @@ class ApifyToolClient:
         }
         actor_run = self.client.actor(WEBSITE_CONTENT_CRAWLER).call(
             run_input=run_input,
-            timeout_secs=timeout_secs,
+            run_timeout=timedelta(seconds=timeout_secs),
             logger=None,
         )
         if actor_run is None:
             raise RuntimeError("Website Content Crawler returned no run data (possible wait timeout).")
         _check_run_status(actor_run, "Website Content Crawler")
 
-        dataset_id = actor_run.get("defaultDatasetId")
-        if not dataset_id:
-            raise RuntimeError("Website Content Crawler run has no default dataset.")
-        result = self.client.dataset(dataset_id).list_items(limit=1)
+        result = self.client.dataset(actor_run.default_dataset_id).list_items(limit=1)
         items = list(result.items)
 
         if not items:
@@ -302,7 +301,7 @@ class ApifyToolClient:
         if memory_mbytes is not None:
             _validate_positive(memory_mbytes, "memory_mbytes")
 
-        call_kwargs: dict[str, Any] = {"timeout_secs": timeout_secs}
+        call_kwargs: dict[str, Any] = {"run_timeout": timedelta(seconds=timeout_secs)}
         if task_input is not None:
             call_kwargs["task_input"] = task_input
         if memory_mbytes is not None:
@@ -314,11 +313,11 @@ class ApifyToolClient:
         _check_run_status(task_run, f"Task {task_id}")
 
         return {
-            "run_id": task_run.get("id"),
-            "status": task_run.get("status"),
-            "dataset_id": task_run.get("defaultDatasetId"),
-            "started_at": task_run.get("startedAt"),
-            "finished_at": task_run.get("finishedAt"),
+            "run_id": task_run.id,
+            "status": task_run.status,
+            "dataset_id": task_run.default_dataset_id,
+            "started_at": task_run.started_at.isoformat(),
+            "finished_at": task_run.finished_at.isoformat() if task_run.finished_at else None,
         }
 
     def run_task_and_get_dataset(
@@ -340,8 +339,7 @@ class ApifyToolClient:
             timeout_secs=timeout_secs,
             memory_mbytes=memory_mbytes,
         )
-        dataset_id = run_metadata["dataset_id"]
-        if not dataset_id:
-            raise RuntimeError(f"Task {task_id} run has no default dataset.")
-        items = self.get_dataset_items(dataset_id=dataset_id, limit=dataset_items_limit, offset=dataset_items_offset)
+        items = self.get_dataset_items(
+            dataset_id=run_metadata["dataset_id"], limit=dataset_items_limit, offset=dataset_items_offset
+        )
         return {**run_metadata, "items": items}
