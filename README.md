@@ -23,7 +23,7 @@ Set your Apify token:
 export APIFY_TOKEN=your_apify_token_here
 ```
 
-Get a token at [Apify Console > Settings > API & Integrations](https://console.apify.com/settings/integrations?utm_source=strands-apify&utm_medium=integrations).
+Get a token at [Apify Console > Settings > API & Integrations](https://console.apify.com/settings/integrations?utm_source=strands-agents&utm_medium=integrations).
 
 ## Quick start
 
@@ -133,7 +133,7 @@ apify_website_content_crawler(
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `APIFY_TOKEN` | Your Apify token from [console.apify.com](https://console.apify.com/settings/integrations?utm_source=strands-apify&utm_medium=integrations) | Yes |
+| `APIFY_TOKEN` | Your Apify token from [console.apify.com](https://console.apify.com/settings/integrations?utm_source=strands-agents&utm_medium=integrations) | Yes |
 | `STRANDS_APIFY_QUIET` | Set to `1` to suppress the rich panels printed on each tool call. Panels are auto-suppressed in non-interactive environments (CI, Docker, web services); use this flag to silence them in interactive shells too. | No |
 
 ## Contributing
