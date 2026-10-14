@@ -45,7 +45,7 @@ try:
 except ImportError:
     HAS_APIFY_CLIENT = False
 
-TRACKING_HEADER = {"x-apify-integration-platform": "strands-apify"}
+TRACKING_HEADER = {"x-apify-integration-platform": "strands-agents"}
 ERROR_PANEL_TITLE = "[bold red]Apify Error[/bold red]"
 DEFAULT_TIMEOUT_SECS = 300
 DEFAULT_SCRAPE_TIMEOUT_SECS = 120

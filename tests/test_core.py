@@ -63,7 +63,7 @@ def test_client_uses_env_token(mock_apify_env):
         ApifyToolClient()
         MockClient.assert_called_once_with(
             "apify_api_test-token-12345",
-            headers={"x-apify-integration-platform": "strands-apify"},
+            headers={"x-apify-integration-platform": "strands-agents"},
         )
 
 
