@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+<!-- git-cliff-unreleased-start -->
+## 0.1.3 - **not yet released**
+
+### 🚀 Features
+
+- [**breaking**] Migrate to apify-client 3.x and require Python 3.11+ ([8a2ef3a](https://github.com/apify/strands-apify/commit/8a2ef3aeb9e47c864c0c343da9d204424b39e7f2)) by [@daveomri](https://github.com/daveomri)
+
+
+<!-- git-cliff-unreleased-end -->
 ## [0.1.2](https://github.com/apify/strands-apify/releases/tag/v0.1.2) (2026-09-09)
 
 
