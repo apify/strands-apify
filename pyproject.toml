@@ -26,6 +26,7 @@ classifiers = [
 dependencies = [
     "strands-agents>=1.0.0",
     "apify-client>=3.0.0,<4.0.0",
+    "impit>=0.14.0,<1.0.0",
     "rich>=13.0.0",
 ]
 
