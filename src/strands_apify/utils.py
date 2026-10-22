@@ -329,7 +329,8 @@ class ApifyToolClient:
         """
         _validate_url(url)
         _validate_positive(timeout_secs, "timeout_secs")
-        formats = formats if formats is not None else ["markdown"]
+        # An empty list makes the Actor pick a format itself, which this method could not map back into the result.
+        formats = formats or ["markdown"]
 
         request_body: dict[str, Any] = {"url": url, "formats": formats}
         if headers:
@@ -339,15 +340,20 @@ class ApifyToolClient:
 
         # Requests in standby mode bypass ApifyClient, so the tracking header has to be sent here explicitly.
         with impit.Client(timeout=timeout_secs) as client:
-            response = client.post(
-                WEB_FETCH_URL,
-                content=json.dumps(request_body),
-                headers={
-                    **TRACKING_HEADER,
-                    "Authorization": f"Bearer {self.client.token}",
-                    "Content-Type": "application/json",
-                },
-            )
+            try:
+                response = client.post(
+                    WEB_FETCH_URL,
+                    content=json.dumps(request_body),
+                    headers={
+                        **TRACKING_HEADER,
+                        "Authorization": f"Bearer {self.client.token}",
+                        "Content-Type": "application/json",
+                    },
+                )
+            except impit.ConnectError as e:
+                raise RuntimeError(
+                    f"Could not connect to Web Fetch at {WEB_FETCH_URL}: {str(e).splitlines()[0]}"
+                ) from e
             # Check the status before parsing: gateway error pages are not guaranteed to be JSON.
             if response.status_code >= HTTP_ERROR_STATUS:
                 raise RuntimeError(_web_fetch_error_message(response))

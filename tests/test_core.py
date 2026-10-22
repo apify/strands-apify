@@ -492,6 +492,15 @@ def test_web_fetch_passes_options(mock_apify_env, mock_impit_client):
     assert "Accept-Language" not in post_kwargs["headers"]
 
 
+def test_web_fetch_empty_formats_defaults_to_markdown(mock_apify_env, mock_impit_client):
+    """An empty `formats` list falls back to markdown instead of letting the Actor auto-select a format."""
+    result = apify_web_fetch(url="https://example.com", formats=[])
+
+    assert result["status"] == "success"
+    assert json.loads(result["content"][0]["text"])["markdown"] == MOCK_WEB_FETCH_BODY["markdown"]
+    assert json.loads(_mock_post(mock_impit_client).call_args.kwargs["content"])["formats"] == ["markdown"]
+
+
 def test_web_fetch_target_http_error_returns_content(mock_apify_env, mock_impit_client):
     """A target 4xx arrives as a 200 from Web Fetch; the tool succeeds and reports the page's own status."""
     _mock_post(mock_impit_client).return_value = _web_fetch_response(
@@ -600,6 +609,20 @@ def test_web_fetch_non_object_success_body(mock_apify_env, mock_impit_client):
 
     assert result["status"] == "error"
     assert "unexpected response body" in result["content"][0]["text"]
+
+
+def test_web_fetch_connect_error(mock_apify_env, mock_impit_client):
+    """A connection failure reports only the readable first line of the impit error."""
+    _mock_post(mock_impit_client).side_effect = impit.ConnectError(
+        "Failed to connect to the server.\nReason: hyper_util::client::legacy::Error(Connect, ...)"
+    )
+
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "error"
+    assert result["content"][0]["text"] == (
+        f"Could not connect to Web Fetch at {WEB_FETCH_URL}: Failed to connect to the server."
+    )
 
 
 def test_web_fetch_invalid_url(mock_apify_env, mock_impit_client):
