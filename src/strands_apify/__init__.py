@@ -8,6 +8,7 @@ from .core import (
     apify_run_task,
     apify_run_task_and_get_dataset,
     apify_scrape_url,
+    apify_web_fetch,
 )
 from .search_crawling import (
     APIFY_SEARCH_TOOLS,
@@ -53,6 +54,7 @@ __all__ = [
     "apify_scrape_url",
     "apify_tiktok_scraper",
     "apify_twitter_scraper",
+    "apify_web_fetch",
     "apify_website_content_crawler",
     "apify_youtube_scraper",
 ]
