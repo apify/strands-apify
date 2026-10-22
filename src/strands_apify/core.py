@@ -296,9 +296,9 @@ def apify_web_fetch(
 ) -> dict[str, Any]:
     """Fetch a single web page and return its content as Markdown, HTML, plain text, links or raw content.
 
-    Uses the Web Fetch Actor, which answers in one real-time request and works around bot protection on its own.
-    This is the fastest way to read one page. Set wait_ms for pages that load their content with JavaScript after
-    the initial load. For multi-page crawls, use apify_run_actor_and_get_dataset with
+    Uses the Web Fetch Actor (`apify/web-fetch`), which answers in one real-time request and works around bot
+    protection on its own. This is the fastest way to read one page. Set wait_ms for pages that load their content
+    with JavaScript after the initial load. For multi-page crawls, use apify_run_actor_and_get_dataset with
     "apify/website-content-crawler".
 
     Args:
