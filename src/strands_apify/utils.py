@@ -1,11 +1,13 @@
 """Shared infrastructure for Apify tools: client wrapper, error formatting, validators."""
 
+import json
 import logging
 import os
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Literal, get_args
 from urllib.parse import urlparse
 
+import impit
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
@@ -54,6 +56,11 @@ DEFAULT_DATASET_ITEMS_LIMIT = 100
 WEBSITE_CONTENT_CRAWLER = "apify/website-content-crawler"
 CrawlerType = Literal["playwright:adaptive", "playwright:firefox", "cheerio"]
 WEBSITE_CONTENT_CRAWLER_TYPES = get_args(CrawlerType)
+
+WEB_FETCH_URL = "https://web-fetch.apify.actor/"
+WebFetchFormat = Literal["markdown", "html", "text", "links", "raw"]
+DEFAULT_WEB_FETCH_TIMEOUT_SECS = 180
+HTTP_ERROR_STATUS = 400
 
 
 def _check_dependency() -> None:
@@ -124,6 +131,26 @@ def _check_run_status(actor_run: "Run", label: str) -> None:
     if status_msg:
         parts.append(f"Message: {status_msg}")
     raise RuntimeError(". ".join(parts))
+
+
+def _web_fetch_error_message(response: impit.Response) -> str:
+    """Build an error message from a failed Web Fetch response in standby mode.
+
+    The Actor reports its own errors as `{"error": str, "code": str}`, the standby gateway as
+    `{"error": {"type": str, "message": str}}`. A gateway error page may not be JSON at all.
+    """
+    message = f"Web Fetch failed with status {response.status_code}"
+    try:
+        body = response.json()
+    except (ValueError, impit.DecodingError):
+        return message
+    error = body.get("error") if isinstance(body, dict) else None
+    if isinstance(error, str):
+        code = body.get("code")
+        return f"{message}: {error} (code: {code})" if isinstance(code, str) else f"{message}: {error}"
+    if isinstance(error, dict) and isinstance(error.get("message"), str):
+        return f"{message}: {error['message']}"
+    return message
 
 
 def _validate_url(url: str) -> None:
@@ -287,6 +314,66 @@ class ApifyToolClient:
             raise RuntimeError(f"No content returned for URL: {url}")
 
         return str(items[0].get("markdown") or items[0].get("text", ""))
+
+    def web_fetch(
+        self,
+        url: str,
+        formats: list[WebFetchFormat] | None = None,
+        headers: dict[str, str] | None = None,
+        wait_ms: int | None = None,
+        timeout_secs: int = DEFAULT_WEB_FETCH_TIMEOUT_SECS,
+    ) -> dict[str, Any]:
+        """Fetch a single URL through the Web Fetch Actor in standby mode and return the requested formats.
+
+        The Actor validates `formats` and `wait` itself and rejects bad values with a 400 that names the problem.
+        """
+        _validate_url(url)
+        _validate_positive(timeout_secs, "timeout_secs")
+        # An empty list makes the Actor pick a format itself, which this method could not map back into the result.
+        formats = formats or ["markdown"]
+
+        request_body: dict[str, Any] = {"url": url, "formats": formats}
+        if headers:
+            request_body["headers"] = headers
+        if wait_ms is not None:
+            request_body["wait"] = wait_ms
+
+        # Requests in standby mode bypass ApifyClient, so the tracking header has to be sent here explicitly.
+        with impit.Client(timeout=timeout_secs) as client:
+            try:
+                response = client.post(
+                    WEB_FETCH_URL,
+                    content=json.dumps(request_body),
+                    headers={
+                        **TRACKING_HEADER,
+                        "Authorization": f"Bearer {self.client.token}",
+                        "Content-Type": "application/json",
+                    },
+                )
+            except impit.ConnectError as e:
+                raise RuntimeError(
+                    f"Could not connect to Web Fetch at {WEB_FETCH_URL}: {str(e).splitlines()[0]}"
+                ) from e
+            # Check the status before parsing: gateway error pages are not guaranteed to be JSON.
+            if response.status_code >= HTTP_ERROR_STATUS:
+                raise RuntimeError(_web_fetch_error_message(response))
+            try:
+                data = response.json()
+            except (ValueError, impit.DecodingError) as e:
+                raise RuntimeError("Web Fetch returned a response that is not valid JSON.") from e
+        if not isinstance(data, dict):
+            raise RuntimeError("Web Fetch returned an unexpected response body.")
+
+        fetch = data.get("fetch") or {}
+        metadata = data.get("metadata") or {}
+        # The target page's own status. Error pages still carry content, so it is returned rather than raised.
+        return {
+            "url": url,
+            "final_url": fetch.get("loadedUrl") or url,
+            "title": metadata.get("title"),
+            "http_status": fetch.get("httpStatusCode"),
+            **{f: data.get(f) for f in formats},
+        }
 
     def run_task(
         self,

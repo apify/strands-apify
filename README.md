@@ -39,14 +39,14 @@ Or register specific tools:
 
 ```python
 from strands import Agent
-from strands_apify import apify_scrape_url, apify_google_search_scraper
+from strands_apify import apify_web_fetch, apify_google_search_scraper
 
-agent = Agent(tools=[apify_scrape_url, apify_google_search_scraper])
+agent = Agent(tools=[apify_web_fetch, apify_google_search_scraper])
 ```
 
 Convenience presets:
 
-- `APIFY_CORE_TOOLS` - generic Actor/task/dataset/scrape tools
+- `APIFY_CORE_TOOLS` - generic Actor/task/dataset tools and single-page fetch
 - `APIFY_SOCIAL_TOOLS` - Instagram, LinkedIn, Twitter/X, TikTok, Facebook
 - `APIFY_SEARCH_TOOLS` - Google Search, Google Maps, YouTube, multi-page crawler, e-commerce
 - `APIFY_ALL_TOOLS` - everything (use sparingly; many tools may overwhelm an LLM's tool choice)
@@ -55,7 +55,7 @@ Convenience presets:
 
 ### Core tools
 
-Generic Apify platform access - run any Actor, run saved tasks, fetch dataset items, and scrape a single URL.
+Generic Apify platform access - run any Actor, run saved tasks, fetch dataset items, and fetch a single web page.
 
 | Tool | What it does |
 |------|--------------|
@@ -64,13 +64,14 @@ Generic Apify platform access - run any Actor, run saved tasks, fetch dataset it
 | `apify_run_actor_and_get_dataset` | Run an Actor and fetch its default dataset in one step |
 | `apify_run_task` | Run a saved Actor task |
 | `apify_run_task_and_get_dataset` | Run a task and fetch its dataset in one step |
-| `apify_scrape_url` | Scrape a single URL via the Website Content Crawler, return Markdown |
+| `apify_web_fetch` | Fetch a single URL via the Web Fetch Actor, return Markdown, HTML, text, links or raw content |
+| `apify_scrape_url` | **Deprecated**, use `apify_web_fetch`. Scrape a single URL via the Website Content Crawler |
 
 ```python
-from strands_apify import apify_scrape_url, apify_run_actor_and_get_dataset
+from strands_apify import apify_web_fetch, apify_run_actor_and_get_dataset
 
 # Single URL
-apify_scrape_url(url="https://example.com")
+apify_web_fetch(url="https://example.com", formats=["markdown", "links"])
 
 # Any Actor with custom input
 apify_run_actor_and_get_dataset(
