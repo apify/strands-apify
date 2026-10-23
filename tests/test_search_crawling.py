@@ -12,6 +12,7 @@ from strands_apify.search_crawling import (
     apify_website_content_crawler,
     apify_youtube_scraper,
 )
+from strands_apify.utils import MAX_CRAWL_DEPTH, MAX_ITEMS
 
 # --- apify_google_search_scraper ---
 
@@ -288,3 +289,63 @@ def test_ecommerce_scraper_actor_failure(mock_apify_env, mock_apify_client):
 
     assert result["status"] == "error"
     assert "FAILED" in result["content"][0]["text"]
+
+
+# --- Ceilings on LLM-supplied values ---
+
+HUGE = 1_000_000
+
+
+def _run_input(mock_apify_client):
+    return mock_apify_client.actor.return_value.call.call_args.kwargs["run_input"]
+
+
+def test_google_search_scraper_clamps_results_limit(mock_apify_env, mock_apify_client):
+    """The page count sent to the Actor is derived from the capped limit, not the requested one."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_google_search_scraper(search_query="AI", results_limit=HUGE)
+
+    assert _run_input(mock_apify_client)["maxPagesPerQuery"] == MAX_ITEMS // 10
+
+
+def test_google_places_scraper_clamps_results_limit_and_max_reviews(mock_apify_env, mock_apify_client):
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_google_places_scraper(search_query="cafes", results_limit=HUGE, include_reviews=True, max_reviews=HUGE)
+
+    run_input = _run_input(mock_apify_client)
+    assert run_input["maxCrawledPlacesPerSearch"] == MAX_ITEMS
+    assert run_input["maxReviews"] == MAX_ITEMS
+
+
+def test_youtube_scraper_clamps_results_limit(mock_apify_env, mock_apify_client):
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_youtube_scraper(search_query="python", results_limit=HUGE)
+
+    assert _run_input(mock_apify_client)["maxResults"] == MAX_ITEMS
+
+
+def test_website_content_crawler_clamps_max_pages_and_max_depth(mock_apify_env, mock_apify_client):
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_website_content_crawler(start_url="https://docs.example.com", max_pages=HUGE, max_depth=50)
+
+    run_input = _run_input(mock_apify_client)
+    assert run_input["maxCrawlPages"] == MAX_ITEMS
+    assert run_input["maxCrawlDepth"] == MAX_CRAWL_DEPTH
+    mock_apify_client.dataset.return_value.list_items.assert_called_once_with(limit=MAX_ITEMS, offset=0)
+
+
+def test_website_content_crawler_rejects_negative_max_depth(mock_apify_env, mock_apify_client):
+    """A depth of 0 crawls only the start URL; below that is an error before any run starts."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        result = apify_website_content_crawler(start_url="https://docs.example.com", max_depth=-1)
+
+    assert result["status"] == "error"
+    assert "max_depth" in result["content"][0]["text"]
+    mock_apify_client.actor.return_value.call.assert_not_called()
+
+
+def test_ecommerce_scraper_clamps_results_limit(mock_apify_env, mock_apify_client):
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_ecommerce_scraper(url="https://www.amazon.com/s?k=laptop", url_type="listing", results_limit=HUGE)
+
+    assert _run_input(mock_apify_client)["maxProductResults"] == MAX_ITEMS

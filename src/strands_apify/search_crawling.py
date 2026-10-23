@@ -19,8 +19,11 @@ from .utils import (
     WEBSITE_CONTENT_CRAWLER,
     ApifyToolClient,
     _check_dependency,
+    _clamp_depth,
+    _clamp_items,
     _error_result,
     _success_result,
+    _validate_non_negative,
     _validate_url,
     _validate_urls,
 )
@@ -86,6 +89,7 @@ def apify_google_search_scraper(
     """
     try:
         _check_dependency()
+        results_limit = _clamp_items(results_limit)
         client = ApifyToolClient()
         max_pages = max(1, (results_limit + 9) // 10)
         run_input: dict[str, Any] = {
@@ -135,6 +139,8 @@ def apify_google_places_scraper(
     """
     try:
         _check_dependency()
+        results_limit = _clamp_items(results_limit)
+        max_reviews = _clamp_items(max_reviews)
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
             "searchStringsArray": [search_query],
@@ -178,6 +184,7 @@ def apify_youtube_scraper(
     """
     try:
         _check_dependency()
+        results_limit = _clamp_items(results_limit)
         if not search_query and not urls:
             raise ValueError("At least one of 'search_query' or 'urls' must be provided.")
         if urls is not None:
@@ -226,6 +233,9 @@ def apify_website_content_crawler(
     """
     try:
         _check_dependency()
+        _validate_non_negative(max_depth, "max_depth")
+        max_pages = _clamp_items(max_pages)
+        max_depth = _clamp_depth(max_depth)
         client = ApifyToolClient()
         _validate_url(start_url)
         run_input: dict[str, Any] = {
@@ -272,6 +282,7 @@ def apify_ecommerce_scraper(
     """
     try:
         _check_dependency()
+        results_limit = _clamp_items(results_limit)
         client = ApifyToolClient()
         _validate_url(url)
         if url_type not in VALID_ECOMMERCE_URL_TYPES:

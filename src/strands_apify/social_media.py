@@ -22,6 +22,7 @@ from .utils import (
     DEFAULT_TIMEOUT_SECS,
     ApifyToolClient,
     _check_dependency,
+    _clamp_items,
     _error_result,
     _success_result,
     _validate_url,
@@ -129,6 +130,8 @@ def apify_instagram_scraper(
     """
     try:
         _check_dependency()
+        results_limit = _clamp_items(results_limit)
+        search_limit = _clamp_items(search_limit)
         if not search_query and not urls:
             raise ValueError(_MISSING_SEARCH_OR_URLS)
         if results_type not in VALID_INSTAGRAM_RESULTS_TYPES:
@@ -190,6 +193,7 @@ def apify_linkedin_profile_posts(
     """
     try:
         _check_dependency()
+        results_limit = _clamp_items(results_limit)
         client = ApifyToolClient()
         username = _extract_linkedin_username(profile_url)
         run_input: dict[str, Any] = {
@@ -242,6 +246,7 @@ def apify_linkedin_profile_search(
     """
     try:
         _check_dependency()
+        results_limit = _clamp_items(results_limit)
         if profile_scraper_mode not in VALID_LINKEDIN_SCRAPER_MODES:
             raise ValueError(
                 f"Invalid profile_scraper_mode '{profile_scraper_mode}'. "
@@ -348,6 +353,7 @@ def apify_twitter_scraper(
     """
     try:
         _check_dependency()
+        results_limit = _clamp_items(results_limit)
         if not search_query and not urls and not twitter_handles:
             raise ValueError("Provide at least one of 'search_query', 'urls', or 'twitter_handles'.")
         if sort not in VALID_TWITTER_SORT_OPTIONS:
@@ -415,6 +421,7 @@ def apify_tiktok_scraper(
     """
     try:
         _check_dependency()
+        results_limit = _clamp_items(results_limit)
         if not search_query and not hashtags and not profiles and not urls:
             raise ValueError("Provide at least one of 'search_query', 'hashtags', 'profiles', or 'urls'.")
         if urls is not None:
@@ -469,6 +476,7 @@ def apify_facebook_posts_scraper(
     """
     try:
         _check_dependency()
+        results_limit = _clamp_items(results_limit)
         _validate_url(page_url)
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
