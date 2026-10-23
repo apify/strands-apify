@@ -123,6 +123,14 @@ never raise out, so the agent's reasoning loop is not interrupted.
   overwhelm an LLM. Prefer the focused presets or individual imports.
 - Each tool calls Apify Actors synchronously via the `apify-client` package and
   blocks until the run completes (or hits `timeout_secs`).
+- Numeric values the agent supplies are capped before calling Apify: `timeout_secs`
+  600, `memory_mbytes` 32768 (snapped to a power of 2), item limits (`limit`,
+  `dataset_items_limit`, `results_limit`, `search_limit`, `max_reviews`, `max_pages`)
+  1000, `max_depth` 5. LinkedIn posts stays at 100. Each tool description states its
+  ceilings as `(clamped to N max)`.
+- Raise or lower a ceiling with `STRANDS_APIFY_MAX_TIMEOUT_SECS`, `STRANDS_APIFY_MAX_ITEMS`,
+  `STRANDS_APIFY_MAX_CRAWL_DEPTH` or `STRANDS_APIFY_MAX_MEMORY_MBYTES` (memory can only
+  be lowered). A capped `timeout_secs` stops the Actor run, so raise it for long crawls.
 - The package sends `x-apify-integration-platform: strands-agents` on every API
   request for attribution.
 
