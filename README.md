@@ -136,16 +136,17 @@ apify_website_content_crawler(
 | `APIFY_TOKEN` | Your Apify token from [console.apify.com](https://console.apify.com/settings/integrations?utm_source=strands-agents&utm_medium=integrations) | Yes |
 | `STRANDS_APIFY_QUIET` | Set to `1` to suppress the rich panels printed on each tool call. Panels are auto-suppressed in non-interactive environments (CI, Docker, web services); use this flag to silence them in interactive shells too. | No |
 | `STRANDS_APIFY_MAX_TIMEOUT_SECS` | Ceiling for `timeout_secs`. Default `600`. | No |
-| `STRANDS_APIFY_MAX_ITEMS` | Ceiling for `limit`, `dataset_items_limit`, `results_limit`, `search_limit`, `max_reviews` and `max_pages`. Default `1000`. | No |
+| `STRANDS_APIFY_MAX_ITEMS` | Ceiling for `limit`, `dataset_items_limit`, `results_limit`, `search_limit`, `max_reviews` and `max_pages`. Default `1000`. LinkedIn profile posts stays at its own `100` unless this is set lower. | No |
 | `STRANDS_APIFY_MAX_CRAWL_DEPTH` | Ceiling for `max_depth`. Default `5`. | No |
 | `STRANDS_APIFY_MAX_MEMORY_MBYTES` | Ceiling for `memory_mbytes`. Default and maximum `32768`; it can only be lowered. | No |
 
 ### Limits on agent-supplied values
 
 The agent picks numeric parameters itself, so every tool caps them before calling Apify: a request for a million
-results or a day-long run is cut to the ceiling above, and `memory_mbytes` is snapped to the power of 2 the platform
-requires. Values below the ceiling are passed through unchanged. Each tool description tells the model its ceilings,
-e.g. `(clamped to 1000 max)`.
+results or a day-long run is cut to the ceiling above. Timeouts, item limits and depths below the ceiling are passed
+through unchanged. `memory_mbytes` is always snapped to the power of 2 the platform requires (1000 becomes 1024) and is
+at least 128, even when the memory ceiling is set lower. Each tool description tells the model its ceilings, e.g.
+`(clamped to 1000 max)`.
 
 `timeout_secs` is the Actor run's own time limit, so a capped run is stopped after 600 seconds. Raise
 `STRANDS_APIFY_MAX_TIMEOUT_SECS` for long crawls. To page through more than 1000 dataset items, call
