@@ -77,11 +77,11 @@ def apify_google_search_scraper(
     Args:
         search_query: The search query string, e.g. "best AI frameworks 2025".
             Supports advanced Google operators like "site:example.com" or "AI OR ML".
-        results_limit: Maximum number of results to return. Google returns ~10 results
+        results_limit: Maximum number of results to return (clamped to 1000 max). Google returns ~10 results
             per page, so requesting more triggers additional page scraping. Defaults to 10.
         country_code: Two-letter country code for localized results, e.g. "us", "de".
         language_code: Two-letter language code for the interface, e.g. "en", "de".
-        timeout_secs: Maximum time in seconds to wait for the run to finish. Defaults to 300.
+        timeout_secs: Maximum time in seconds to wait for the run to finish (clamped to 600 max). Defaults to 300.
 
     Returns:
         Dict with status and content containing structured Google search results including
@@ -128,11 +128,11 @@ def apify_google_places_scraper(
 
     Args:
         search_query: Search query for Google Maps, e.g. "restaurants in Prague".
-        results_limit: Maximum number of places to return. Defaults to 20.
+        results_limit: Maximum number of places to return (clamped to 1000 max). Defaults to 20.
         language: Language for results, e.g. "en", "de". Defaults to English.
         include_reviews: Whether to include user reviews for each place. Defaults to False.
-        max_reviews: Maximum reviews per place when include_reviews is True. Defaults to 5.
-        timeout_secs: Maximum time in seconds to wait for the run to finish. Defaults to 300.
+        max_reviews: Maximum reviews per place when include_reviews is True (clamped to 1000 max). Defaults to 5.
+        timeout_secs: Maximum time in seconds to wait for the run to finish (clamped to 600 max). Defaults to 300.
 
     Returns:
         Dict with status and content containing structured Google Maps place data.
@@ -176,8 +176,8 @@ def apify_youtube_scraper(
     Args:
         search_query: YouTube search query, e.g. "python tutorial".
         urls: Specific YouTube video or channel URLs to scrape.
-        results_limit: Maximum number of results to return. Defaults to 20.
-        timeout_secs: Maximum time in seconds to wait for the run to finish. Defaults to 300.
+        results_limit: Maximum number of results to return (clamped to 1000 max). Defaults to 20.
+        timeout_secs: Maximum time in seconds to wait for the run to finish (clamped to 600 max). Defaults to 300.
 
     Returns:
         Dict with status and content containing structured YouTube video/channel data.
@@ -224,9 +224,9 @@ def apify_website_content_crawler(
 
     Args:
         start_url: The starting URL to crawl, e.g. "https://docs.example.com".
-        max_pages: Maximum number of pages to crawl. Defaults to 10.
-        max_depth: Maximum crawl depth from the start URL. Defaults to 2.
-        timeout_secs: Maximum time in seconds to wait for the run to finish. Defaults to 300.
+        max_pages: Maximum number of pages to crawl (clamped to 1000 max). Defaults to 10.
+        max_depth: Maximum crawl depth from the start URL (clamped to 5 max). Defaults to 2.
+        timeout_secs: Maximum time in seconds to wait for the run to finish (clamped to 600 max). Defaults to 300.
 
     Returns:
         Dict with status and content containing crawled page data with markdown content.
@@ -274,8 +274,8 @@ def apify_ecommerce_scraper(
         url_type: Type of URL being scraped. Use "product" (default) for a direct product
             detail page, or "listing" for a category page or search results page containing
             multiple products.
-        results_limit: Maximum number of products to return. Defaults to 20.
-        timeout_secs: Maximum time in seconds to wait for the run to finish. Defaults to 300.
+        results_limit: Maximum number of products to return (clamped to 1000 max). Defaults to 20.
+        timeout_secs: Maximum time in seconds to wait for the run to finish (clamped to 600 max). Defaults to 300.
 
     Returns:
         Dict with status and content containing structured product data.

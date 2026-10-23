@@ -53,8 +53,9 @@ def apify_run_actor(
             e.g. "apify/website-content-crawler". Find Actors at https://apify.com/store.
         run_input: JSON-serializable input for the Actor. Each Actor defines its own
             input schema - check the Actor README on Apify Store for required fields.
-        timeout_secs: Maximum time in seconds to wait for the Actor run to finish. Defaults to 300.
-        memory_mbytes: Memory allocation in MB for the Actor run. Uses Actor default `memory` value if not set.
+        timeout_secs: Maximum time in seconds to wait for the Actor run to finish (clamped to 600 max). Defaults to 300.
+        memory_mbytes: Memory allocation in MB for the Actor run, a power of 2 (clamped to 32768 max).
+            Uses Actor default `memory` value if not set.
         build: Actor build tag or number to run a specific version. Uses latest build if not set.
 
     Returns:
@@ -100,7 +101,7 @@ def apify_get_dataset_items(
 
     Args:
         dataset_id: The Apify dataset ID to fetch items from.
-        limit: Maximum number of items to return. Defaults to 100.
+        limit: Maximum number of items to return (clamped to 1000 max). Defaults to 100.
         offset: Number of items to skip for pagination. Defaults to 0.
 
     Returns:
@@ -142,10 +143,11 @@ def apify_run_actor_and_get_dataset(
             e.g. "apify/website-content-crawler". Find Actors at https://apify.com/store.
         run_input: JSON-serializable input for the Actor. Each Actor defines its own
             input schema - check the Actor README on Apify Store for required fields.
-        timeout_secs: Maximum time in seconds to wait for the Actor run to finish. Defaults to 300.
-        memory_mbytes: Memory allocation in MB for the Actor run. Uses Actor default `memory` value if not set.
+        timeout_secs: Maximum time in seconds to wait for the Actor run to finish (clamped to 600 max). Defaults to 300.
+        memory_mbytes: Memory allocation in MB for the Actor run, a power of 2 (clamped to 32768 max).
+            Uses Actor default `memory` value if not set.
         build: Actor build tag or number to run a specific version. Uses latest build if not set.
-        dataset_items_limit: Maximum number of dataset items to return. Defaults to 100.
+        dataset_items_limit: Maximum number of dataset items to return (clamped to 1000 max). Defaults to 100.
         dataset_items_offset: Number of dataset items to skip for pagination. Defaults to 0.
 
     Returns:
@@ -197,8 +199,9 @@ def apify_run_task(
     Args:
         task_id: Task identifier in "username/task-name" format or a task ID string.
         task_input: Optional JSON-serializable input to override the task's default input fields.
-        timeout_secs: Maximum time in seconds to wait for the task run to finish. Defaults to 300.
-        memory_mbytes: Memory allocation in MB for the task run. Uses task default `memory` value if not set.
+        timeout_secs: Maximum time in seconds to wait for the task run to finish (clamped to 600 max). Defaults to 300.
+        memory_mbytes: Memory allocation in MB for the task run, a power of 2 (clamped to 32768 max).
+            Uses task default `memory` value if not set.
 
     Returns:
         Dict with status and content containing run metadata: run_id, status, dataset_id,
@@ -246,9 +249,10 @@ def apify_run_task_and_get_dataset(
     Args:
         task_id: Task identifier in "username/task-name" format or a task ID string.
         task_input: Optional JSON-serializable input to override the task's default input fields.
-        timeout_secs: Maximum time in seconds to wait for the task run to finish. Defaults to 300.
-        memory_mbytes: Memory allocation in MB for the task run. Uses task default `memory` value if not set.
-        dataset_items_limit: Maximum number of dataset items to return. Defaults to 100.
+        timeout_secs: Maximum time in seconds to wait for the task run to finish (clamped to 600 max). Defaults to 300.
+        memory_mbytes: Memory allocation in MB for the task run, a power of 2 (clamped to 32768 max).
+            Uses task default `memory` value if not set.
+        dataset_items_limit: Maximum number of dataset items to return (clamped to 1000 max). Defaults to 100.
         dataset_items_offset: Number of dataset items to skip for pagination. Defaults to 0.
 
     Returns:
@@ -297,7 +301,7 @@ def apify_scrape_url(
 
     Args:
         url: The URL to scrape, e.g. "https://example.com".
-        timeout_secs: Maximum time in seconds to wait for scraping to finish. Defaults to 120.
+        timeout_secs: Maximum time in seconds to wait for scraping to finish (clamped to 600 max). Defaults to 120.
         crawler_type: Crawler engine to use. One of:
             - "cheerio" (default): Fastest, no JavaScript rendering. Best for static HTML.
             - "playwright:adaptive": Renders JS only when needed. Good general-purpose choice.
