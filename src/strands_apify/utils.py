@@ -51,6 +51,14 @@ DEFAULT_TIMEOUT_SECS = 300
 DEFAULT_SCRAPE_TIMEOUT_SECS = 120
 DEFAULT_DATASET_ITEMS_LIMIT = 100
 
+# Ceilings for numeric values the LLM supplies. Each can be overridden with the matching STRANDS_APIFY_MAX_*
+# environment variable, read on every call. Memory can only be lowered: 32768 MB is the platform's maximum.
+MAX_TIMEOUT_SECS = 600
+MAX_MEMORY_MBYTES = 32768
+MAX_ITEMS = 1000
+MAX_CRAWL_DEPTH = 5
+MIN_MEMORY_MBYTES = 128
+
 WEBSITE_CONTENT_CRAWLER = "apify/website-content-crawler"
 CrawlerType = Literal["playwright:adaptive", "playwright:firefox", "cheerio"]
 WEBSITE_CONTENT_CRAWLER_TYPES = get_args(CrawlerType)
@@ -124,6 +132,50 @@ def _check_run_status(actor_run: "Run", label: str) -> None:
     if status_msg:
         parts.append(f"Message: {status_msg}")
     raise RuntimeError(". ".join(parts))
+
+
+def _ceiling(env_var: str, default: int) -> int:
+    """Return the ceiling set in `env_var`, or `default` when it is unset or not a positive integer."""
+    raw = os.getenv(env_var, "")
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        value = 0
+    if value <= 0:
+        logger.warning("Ignoring %s=%r, expected a positive integer. Using %d.", env_var, raw, default)
+        return default
+    return value
+
+
+# The clamps only cap the upper end. Zero and negative values pass through, so the validators still reject them.
+def _clamp_timeout(value: int) -> int:
+    return min(value, _ceiling("STRANDS_APIFY_MAX_TIMEOUT_SECS", MAX_TIMEOUT_SECS))
+
+
+def _clamp_items(value: int) -> int:
+    return min(value, _ceiling("STRANDS_APIFY_MAX_ITEMS", MAX_ITEMS))
+
+
+def _clamp_depth(value: int) -> int:
+    return min(value, _ceiling("STRANDS_APIFY_MAX_CRAWL_DEPTH", MAX_CRAWL_DEPTH))
+
+
+def _clamp_memory(value: int) -> int:
+    """Clamp memory to the platform minimum and the ceiling, then snap it to the power of 2 the platform requires.
+
+    Rounds up, unless that would exceed the ceiling. A ceiling below the platform minimum yields the minimum. Zero and
+    negative values pass through for the validators, like in the other clamps.
+    """
+    if value <= 0:
+        return value
+    ceiling = min(_ceiling("STRANDS_APIFY_MAX_MEMORY_MBYTES", MAX_MEMORY_MBYTES), MAX_MEMORY_MBYTES)
+    clamped = max(MIN_MEMORY_MBYTES, min(value, ceiling))
+    power = 1 << (clamped - 1).bit_length()
+    if power > ceiling:
+        power = 1 << (ceiling.bit_length() - 1)
+    return max(power, MIN_MEMORY_MBYTES)
 
 
 def _validate_url(url: str) -> None:
