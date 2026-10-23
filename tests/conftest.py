@@ -74,6 +74,18 @@ def mock_apify_client():
     return client
 
 
+@pytest.fixture(autouse=True)
+def _default_ceilings(monkeypatch):
+    """Run every test against the default ceilings, whatever `STRANDS_APIFY_MAX_*` the developer's shell exports."""
+    for env_var in (
+        "STRANDS_APIFY_MAX_TIMEOUT_SECS",
+        "STRANDS_APIFY_MAX_MEMORY_MBYTES",
+        "STRANDS_APIFY_MAX_ITEMS",
+        "STRANDS_APIFY_MAX_CRAWL_DEPTH",
+    ):
+        monkeypatch.delenv(env_var, raising=False)
+
+
 @pytest.fixture
 def mock_apify_env(monkeypatch):
     """Set required Apify environment variables."""

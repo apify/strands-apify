@@ -22,18 +22,6 @@ CLAMPS = [
 ]
 
 
-@pytest.fixture(autouse=True)
-def _no_cap_overrides(monkeypatch):
-    """Run every test against the default ceilings, whatever the developer's shell exports."""
-    for env_var in (
-        "STRANDS_APIFY_MAX_TIMEOUT_SECS",
-        "STRANDS_APIFY_MAX_MEMORY_MBYTES",
-        "STRANDS_APIFY_MAX_ITEMS",
-        "STRANDS_APIFY_MAX_CRAWL_DEPTH",
-    ):
-        monkeypatch.delenv(env_var, raising=False)
-
-
 @pytest.mark.parametrize(("clamp", "cap", "env_var"), CLAMPS)
 def test_clamp_caps_values_above_the_ceiling(clamp, cap, env_var):
     assert clamp(cap + 1) == cap

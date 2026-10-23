@@ -240,6 +240,8 @@ class ApifyToolClient:
         _validate_positive(timeout_secs, "timeout_secs")
         if memory_mbytes is not None:
             _validate_positive(memory_mbytes, "memory_mbytes")
+            memory_mbytes = _clamp_memory(memory_mbytes)
+        timeout_secs = _clamp_timeout(timeout_secs)
 
         call_kwargs: dict[str, Any] = {
             "run_input": run_input if run_input is not None else {},
@@ -274,6 +276,7 @@ class ApifyToolClient:
         _validate_identifier(dataset_id, "dataset_id")
         _validate_positive(limit, "limit")
         _validate_non_negative(offset, "offset")
+        limit = _clamp_items(limit)
 
         result = self.client.dataset(dataset_id).list_items(limit=limit, offset=offset)
         return list(result.items)
@@ -313,6 +316,7 @@ class ApifyToolClient:
         """Scrape a single URL using Website Content Crawler and return Markdown."""
         _validate_url(url)
         _validate_positive(timeout_secs, "timeout_secs")
+        timeout_secs = _clamp_timeout(timeout_secs)
         if crawler_type not in WEBSITE_CONTENT_CRAWLER_TYPES:
             raise ValueError(
                 f"Invalid crawler_type '{crawler_type}'. Must be one of: {', '.join(WEBSITE_CONTENT_CRAWLER_TYPES)}."
@@ -352,6 +356,8 @@ class ApifyToolClient:
         _validate_positive(timeout_secs, "timeout_secs")
         if memory_mbytes is not None:
             _validate_positive(memory_mbytes, "memory_mbytes")
+            memory_mbytes = _clamp_memory(memory_mbytes)
+        timeout_secs = _clamp_timeout(timeout_secs)
 
         call_kwargs: dict[str, Any] = {"run_timeout": timedelta(seconds=timeout_secs)}
         if task_input is not None:
