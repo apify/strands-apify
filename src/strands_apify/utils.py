@@ -350,10 +350,9 @@ class ApifyToolClient:
                         "Content-Type": "application/json",
                     },
                 )
-            except impit.ConnectError as e:
-                raise RuntimeError(
-                    f"Could not connect to Web Fetch at {WEB_FETCH_URL}: {str(e).splitlines()[0]}"
-                ) from e
+            except impit.TransportError as e:
+                reason = str(e).partition("\n")[0]
+                raise RuntimeError(f"Request to Web Fetch at {WEB_FETCH_URL} failed: {reason}") from e
             # Check the status before parsing: gateway error pages are not guaranteed to be JSON.
             if response.status_code >= HTTP_ERROR_STATUS:
                 raise RuntimeError(_web_fetch_error_message(response))

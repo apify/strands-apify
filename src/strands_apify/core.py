@@ -15,6 +15,7 @@ import json
 import warnings
 from typing import Any
 
+from rich.markup import escape
 from strands import tool
 
 from .utils import (
@@ -326,9 +327,9 @@ def apify_web_fetch(
             text=json.dumps(result, indent=2, default=str),
             panel_body=(
                 f"[green]URL fetched[/green]\n"
-                f"URL: {result['final_url']}\n"
+                f"URL: {escape(str(result['final_url']))}\n"
                 f"HTTP status: {result['http_status']}\n"
-                f"Title: {result['title']}"
+                f"Title: {escape(str(result['title']))}"
             ),
             panel_title="Apify: Web Fetch",
         )
@@ -356,7 +357,8 @@ def apify_scrape_url(
     warnings.warn(
         "apify_scrape_url is deprecated and will be removed in a future release. Use apify_web_fetch.",
         FutureWarning,
-        stacklevel=2,
+        # Strands' tool wrapper adds a frame between the caller and this function.
+        stacklevel=3,
     )
     try:
         _check_dependency()
@@ -380,5 +382,4 @@ APIFY_CORE_TOOLS = [
     apify_run_task,
     apify_run_task_and_get_dataset,
     apify_web_fetch,
-    apify_scrape_url,
 ]

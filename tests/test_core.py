@@ -1,5 +1,6 @@
 """Tests for the Apify core tools."""
 
+import io
 import json
 from datetime import timedelta
 from typing import Any
@@ -8,6 +9,7 @@ from unittest.mock import MagicMock, patch
 import impit
 import pytest
 from conftest import MOCK_FAILED_RUN, MOCK_TIMED_OUT_RUN
+from rich.console import Console
 
 from strands_apify import core as apify_core
 from strands_apify.core import (
@@ -611,18 +613,42 @@ def test_web_fetch_non_object_success_body(mock_apify_env, mock_impit_client):
     assert "unexpected response body" in result["content"][0]["text"]
 
 
-def test_web_fetch_connect_error(mock_apify_env, mock_impit_client):
-    """A connection failure reports only the readable first line of the impit error."""
-    _mock_post(mock_impit_client).side_effect = impit.ConnectError(
-        "Failed to connect to the server.\nReason: hyper_util::client::legacy::Error(Connect, ...)"
-    )
+@pytest.mark.parametrize(
+    ("error", "reason"),
+    [
+        (
+            impit.ConnectError("Failed to connect to the server.\nReason: hyper_util::client::legacy::Error(...)"),
+            "Failed to connect to the server.",
+        ),
+        (impit.ReadTimeout("Request timeout (180000 ms) exceeded."), "Request timeout (180000 ms) exceeded."),
+        (impit.ConnectError(""), ""),
+    ],
+)
+def test_web_fetch_transport_error(mock_apify_env, mock_impit_client, error, reason):
+    """A transport failure reports only the readable first line of the impit error, even when it is empty."""
+    _mock_post(mock_impit_client).side_effect = error
 
     result = apify_web_fetch(url="https://example.com")
 
     assert result["status"] == "error"
-    assert result["content"][0]["text"] == (
-        f"Could not connect to Web Fetch at {WEB_FETCH_URL}: Failed to connect to the server."
+    assert result["content"][0]["text"] == f"Request to Web Fetch at {WEB_FETCH_URL} failed: {reason}"
+
+
+def test_web_fetch_panel_escapes_page_markup(mock_apify_env, mock_impit_client):
+    """A page title with Rich markup is shown literally instead of failing the fetch."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(
+        200, {**MOCK_WEB_FETCH_BODY, "metadata": {"title": "[/b] Closing tag"}}
     )
+    output = io.StringIO()
+
+    with (
+        patch("strands_apify.utils._panels_enabled", return_value=True),
+        patch("strands_apify.utils.console", Console(file=output, width=200)),
+    ):
+        result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "success"
+    assert "[/b] Closing tag" in output.getvalue()
 
 
 def test_web_fetch_invalid_url(mock_apify_env, mock_impit_client):
@@ -643,6 +669,9 @@ def test_web_fetch_zero_timeout(mock_apify_env, mock_impit_client):
     _mock_post(mock_impit_client).assert_not_called()
 
 
+# --- apify_scrape_url ---
+
+
 def test_scrape_url_deprecation_warning(mock_apify_env, mock_apify_client):
     """apify_scrape_url still works but warns and points to apify_web_fetch."""
     mock_list_result = MagicMock()
@@ -651,14 +680,22 @@ def test_scrape_url_deprecation_warning(mock_apify_env, mock_apify_client):
 
     with (
         patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client),
-        pytest.warns(FutureWarning, match="apify_web_fetch"),
+        pytest.warns(FutureWarning, match="apify_web_fetch") as record,
     ):
         result = apify_scrape_url(url="https://example.com")
 
     assert result["status"] == "success"
+    assert record[0].filename == __file__, "the warning should point at the caller, not at strands internals"
 
 
-# --- apify_scrape_url ---
+def test_scrape_url_is_left_out_of_the_presets():
+    """Agents built from a preset only get apify_web_fetch; the deprecated tool is still importable."""
+    import strands_apify
+
+    assert apify_web_fetch in strands_apify.APIFY_CORE_TOOLS
+    assert apify_scrape_url not in strands_apify.APIFY_CORE_TOOLS
+    assert apify_scrape_url not in strands_apify.APIFY_ALL_TOOLS
+    assert strands_apify.apify_scrape_url is apify_scrape_url
 
 
 @ignore_scrape_deprecation

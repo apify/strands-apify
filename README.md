@@ -65,7 +65,7 @@ Generic Apify platform access - run any Actor, run saved tasks, fetch dataset it
 | `apify_run_task` | Run a saved Actor task |
 | `apify_run_task_and_get_dataset` | Run a task and fetch its dataset in one step |
 | `apify_web_fetch` | Fetch a single URL via the Web Fetch Actor, return Markdown, HTML, text, links or raw content |
-| `apify_scrape_url` | **Deprecated**, use `apify_web_fetch`. Scrape a single URL via the Website Content Crawler |
+| `apify_scrape_url` | **Deprecated**, use `apify_web_fetch`. Not in `APIFY_CORE_TOOLS`; import it directly if you still need it |
 
 ```python
 from strands_apify import apify_web_fetch, apify_run_actor_and_get_dataset
