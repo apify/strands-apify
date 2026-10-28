@@ -146,7 +146,7 @@ The agent picks numeric parameters itself, so every tool caps them before callin
 results or a day-long run is cut to the ceiling above. Timeouts, item limits and depths below the ceiling are passed
 through unchanged. `memory_mbytes` is always snapped to the power of 2 the platform requires (1000 becomes 1024) and is
 at least 128, even when the memory ceiling is set lower. Each tool description tells the model its ceilings, e.g.
-`(clamped to 1000 max)`.
+`(clamped to 1000 max by default)`.
 
 `timeout_secs` is the Actor run's own time limit, so a capped run is stopped after 600 seconds. Raise
 `STRANDS_APIFY_MAX_TIMEOUT_SECS` for long crawls. To page through more than 1000 dataset items, call

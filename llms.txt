@@ -127,7 +127,7 @@ never raise out, so the agent's reasoning loop is not interrupted.
   600, `memory_mbytes` 32768 (snapped to a power of 2), item limits (`limit`,
   `dataset_items_limit`, `results_limit`, `search_limit`, `max_reviews`, `max_pages`)
   1000, `max_depth` 5. LinkedIn posts stays at 100. Each tool description states its
-  ceilings as `(clamped to N max)`.
+  ceilings as `(clamped to N max by default)`.
 - Raise or lower a ceiling with `STRANDS_APIFY_MAX_TIMEOUT_SECS`, `STRANDS_APIFY_MAX_ITEMS`,
   `STRANDS_APIFY_MAX_CRAWL_DEPTH` or `STRANDS_APIFY_MAX_MEMORY_MBYTES` (memory can only
   be lowered). A capped `timeout_secs` stops the Actor run, so raise it for long crawls.

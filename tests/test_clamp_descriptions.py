@@ -1,4 +1,4 @@
-"""The `(clamped to N max)` note in each tool description must match the ceiling the code applies."""
+"""The `(clamped to N max by default)` note in each tool description must match the ceiling the code applies."""
 
 import pytest
 
@@ -42,7 +42,7 @@ def test_clamped_parameter_states_its_ceiling(tool_name, param, description):
     """Each clamped parameter's description states the ceiling the code applies."""
     ceiling = LOWER_CEILINGS.get((tool_name, param), CEILINGS[param])
 
-    assert f"(clamped to {ceiling} max)" in description
+    assert f"(clamped to {ceiling} max by default)" in description
 
 
 @pytest.mark.parametrize(("tool_name", "param", "description"), UNCLAMPED)
