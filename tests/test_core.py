@@ -16,7 +16,7 @@ from strands_apify.core import (
     apify_run_task_and_get_dataset,
     apify_scrape_url,
 )
-from strands_apify.utils import MAX_ITEMS, MAX_TIMEOUT_SECS, ApifyToolClient
+from strands_apify.utils import MAX_ITEMS, MAX_MEMORY_MBYTES, MAX_TIMEOUT_SECS, ApifyToolClient
 
 MOCK_SCRAPED_ITEM = {
     "url": "https://example.com",
@@ -145,9 +145,6 @@ def test_scrape_url_passes_run_timeout(mock_apify_env, mock_apify_client):
     assert "timeout_secs" not in call_kwargs
 
 
-# --- Ceilings on LLM-supplied values ---
-
-
 def test_run_actor_clamps_timeout_and_memory(mock_apify_env, mock_apify_client):
     """An oversized timeout reaches `.call()` capped, and memory is snapped to a power of 2."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
@@ -167,10 +164,11 @@ def test_run_task_clamps_timeout_and_memory(mock_apify_env, mock_apify_client):
     assert result["status"] == "success"
     call_kwargs = mock_apify_client.task.return_value.call.call_args.kwargs
     assert call_kwargs["run_timeout"] == timedelta(seconds=MAX_TIMEOUT_SECS)
-    assert call_kwargs["memory_mbytes"] == 32768
+    assert call_kwargs["memory_mbytes"] == MAX_MEMORY_MBYTES
 
 
 def test_scrape_url_clamps_timeout(mock_apify_env, mock_apify_client):
+    """An oversized scrape timeout reaches `.call()` capped."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_scrape_url(url="https://example.com", timeout_secs=86400)
 
@@ -179,6 +177,7 @@ def test_scrape_url_clamps_timeout(mock_apify_env, mock_apify_client):
 
 
 def test_get_dataset_items_clamps_limit(mock_apify_env, mock_apify_client):
+    """An oversized `limit` reaches `list_items()` capped."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_get_dataset_items(dataset_id="dataset-123", limit=1_000_000)
 
@@ -186,6 +185,7 @@ def test_get_dataset_items_clamps_limit(mock_apify_env, mock_apify_client):
 
 
 def test_run_actor_and_get_dataset_clamps_dataset_items_limit(mock_apify_env, mock_apify_client):
+    """An oversized `dataset_items_limit` reaches `list_items()` capped after an Actor run."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_run_actor_and_get_dataset(actor_id="actor/my-scraper", dataset_items_limit=1_000_000)
 
@@ -193,6 +193,7 @@ def test_run_actor_and_get_dataset_clamps_dataset_items_limit(mock_apify_env, mo
 
 
 def test_run_task_and_get_dataset_clamps_dataset_items_limit(mock_apify_env, mock_apify_client):
+    """An oversized `dataset_items_limit` reaches `list_items()` capped after a task run."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_run_task_and_get_dataset(task_id="user~my-task", dataset_items_limit=1_000_000)
 

@@ -57,6 +57,7 @@ MAX_TIMEOUT_SECS = 600
 MAX_MEMORY_MBYTES = 32768
 MAX_ITEMS = 1000
 MAX_CRAWL_DEPTH = 5
+
 MIN_MEMORY_MBYTES = 128
 
 WEBSITE_CONTENT_CRAWLER = "apify/website-content-crawler"
@@ -149,7 +150,7 @@ def _ceiling(env_var: str, default: int) -> int:
     return value
 
 
-# The clamps only cap the upper end. Zero and negative values pass through, so the validators still reject them.
+# The clamps only cap the upper end. Zero and negative values pass through, so the validators reject them.
 def _clamp_timeout(value: int) -> int:
     return min(value, _ceiling("STRANDS_APIFY_MAX_TIMEOUT_SECS", MAX_TIMEOUT_SECS))
 

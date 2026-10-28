@@ -25,12 +25,21 @@ PARAMETERS = [
     for tool in APIFY_ALL_TOOLS
     for name, prop in tool.tool_spec["inputSchema"]["json"]["properties"].items()
 ]
-CLAMPED = [(tool_name, name, description) for tool_name, name, description in PARAMETERS if name in CEILINGS]
-UNCLAMPED = [(tool_name, name, description) for tool_name, name, description in PARAMETERS if name not in CEILINGS]
+CLAMPED = [
+    pytest.param(tool_name, name, description, id=f"{tool_name}-{name}")
+    for tool_name, name, description in PARAMETERS
+    if name in CEILINGS
+]
+UNCLAMPED = [
+    pytest.param(tool_name, name, description, id=f"{tool_name}-{name}")
+    for tool_name, name, description in PARAMETERS
+    if name not in CEILINGS
+]
 
 
 @pytest.mark.parametrize(("tool_name", "param", "description"), CLAMPED)
 def test_clamped_parameter_states_its_ceiling(tool_name, param, description):
+    """Each clamped parameter's description states the ceiling the code applies."""
     ceiling = LOWER_CEILINGS.get((tool_name, param), CEILINGS[param])
 
     assert f"(clamped to {ceiling} max)" in description
@@ -38,4 +47,5 @@ def test_clamped_parameter_states_its_ceiling(tool_name, param, description):
 
 @pytest.mark.parametrize(("tool_name", "param", "description"), UNCLAMPED)
 def test_unclamped_parameter_does_not_claim_a_ceiling(tool_name, param, description):
+    """No other parameter's description claims a ceiling."""
     assert "clamped to" not in description

@@ -291,8 +291,6 @@ def test_ecommerce_scraper_actor_failure(mock_apify_env, mock_apify_client):
     assert "FAILED" in result["content"][0]["text"]
 
 
-# --- Ceilings on LLM-supplied values ---
-
 HUGE = 1_000_000
 
 
@@ -309,6 +307,7 @@ def test_google_search_scraper_clamps_results_limit(mock_apify_env, mock_apify_c
 
 
 def test_google_places_scraper_clamps_results_limit_and_max_reviews(mock_apify_env, mock_apify_client):
+    """Places and reviews per place are both capped in the Actor input."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_google_places_scraper(search_query="cafes", results_limit=HUGE, include_reviews=True, max_reviews=HUGE)
 
@@ -318,6 +317,7 @@ def test_google_places_scraper_clamps_results_limit_and_max_reviews(mock_apify_e
 
 
 def test_youtube_scraper_clamps_results_limit(mock_apify_env, mock_apify_client):
+    """`results_limit` is capped in the Actor input."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_youtube_scraper(search_query="python", results_limit=HUGE)
 
@@ -325,6 +325,7 @@ def test_youtube_scraper_clamps_results_limit(mock_apify_env, mock_apify_client)
 
 
 def test_website_content_crawler_clamps_max_pages_and_max_depth(mock_apify_env, mock_apify_client):
+    """Pages and depth are capped in the Actor input, and the dataset fetch is capped too."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_website_content_crawler(start_url="https://docs.example.com", max_pages=HUGE, max_depth=50)
 
@@ -345,6 +346,7 @@ def test_website_content_crawler_rejects_negative_max_depth(mock_apify_env, mock
 
 
 def test_ecommerce_scraper_clamps_results_limit(mock_apify_env, mock_apify_client):
+    """`results_limit` is capped in the Actor input."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_ecommerce_scraper(url="https://www.amazon.com/s?k=laptop", url_type="listing", results_limit=HUGE)
 

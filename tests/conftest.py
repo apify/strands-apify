@@ -75,7 +75,7 @@ def mock_apify_client():
 
 
 @pytest.fixture(autouse=True)
-def _default_ceilings(monkeypatch):
+def default_ceilings(monkeypatch):
     """Run every test against the default ceilings, whatever `STRANDS_APIFY_MAX_*` the developer's shell exports."""
     for env_var in (
         "STRANDS_APIFY_MAX_TIMEOUT_SECS",

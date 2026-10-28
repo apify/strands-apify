@@ -495,8 +495,6 @@ def test_social_media_actor_failure(mock_apify_env, mock_apify_client):
     assert "FAILED" in result["content"][0]["text"]
 
 
-# --- Ceilings on LLM-supplied values ---
-
 HUGE = 1_000_000
 
 
@@ -505,6 +503,7 @@ def _run_input(mock_apify_client):
 
 
 def test_instagram_scraper_clamps_results_limit_and_search_limit(mock_apify_env, mock_apify_client):
+    """Results per hit and the number of search hits are both capped in the Actor input."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_instagram_scraper(search_query="webdev", results_limit=HUGE, search_limit=HUGE)
 
@@ -514,7 +513,7 @@ def test_instagram_scraper_clamps_results_limit_and_search_limit(mock_apify_env,
 
 
 def test_linkedin_profile_posts_keeps_its_own_lower_cap(monkeypatch, mock_apify_env, mock_apify_client):
-    """The Actor's own limit of 100 still applies, and a lower general ceiling wins over it."""
+    """The Actor's own limit of 100 applies, and a lower general ceiling wins over it."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_linkedin_profile_posts(profile_url="neal-mohan", results_limit=HUGE)
     assert _run_input(mock_apify_client)["limit"] == 100
@@ -526,6 +525,7 @@ def test_linkedin_profile_posts_keeps_its_own_lower_cap(monkeypatch, mock_apify_
 
 
 def test_linkedin_profile_search_clamps_results_limit(mock_apify_env, mock_apify_client):
+    """`results_limit` is capped in the Actor input."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_linkedin_profile_search(search_query="engineer", results_limit=HUGE)
 
@@ -533,6 +533,7 @@ def test_linkedin_profile_search_clamps_results_limit(mock_apify_env, mock_apify
 
 
 def test_twitter_scraper_clamps_results_limit(mock_apify_env, mock_apify_client):
+    """`results_limit` is capped in the Actor input."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_twitter_scraper(search_query="web scraping", results_limit=HUGE)
 
@@ -540,6 +541,7 @@ def test_twitter_scraper_clamps_results_limit(mock_apify_env, mock_apify_client)
 
 
 def test_tiktok_scraper_clamps_results_limit(mock_apify_env, mock_apify_client):
+    """`results_limit` is capped in the Actor input."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_tiktok_scraper(search_query="python", results_limit=HUGE)
 
@@ -547,6 +549,7 @@ def test_tiktok_scraper_clamps_results_limit(mock_apify_env, mock_apify_client):
 
 
 def test_facebook_posts_scraper_clamps_results_limit(mock_apify_env, mock_apify_client):
+    """`results_limit` is capped in the Actor input."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
         apify_facebook_posts_scraper(page_url="https://www.facebook.com/apify", results_limit=HUGE)
 
@@ -554,6 +557,7 @@ def test_facebook_posts_scraper_clamps_results_limit(mock_apify_env, mock_apify_
 
 
 def test_items_ceiling_can_be_raised_from_the_environment(monkeypatch, mock_apify_env, mock_apify_client):
+    """`STRANDS_APIFY_MAX_ITEMS` lets a larger request through to the Actor input."""
     monkeypatch.setenv("STRANDS_APIFY_MAX_ITEMS", "5000")
 
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
