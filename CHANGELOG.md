@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 ### 🚀 Features
 
 - [**breaking**] Migrate to apify-client 3.x and require Python 3.11+ ([8a2ef3a](https://github.com/apify/strands-apify/commit/8a2ef3aeb9e47c864c0c343da9d204424b39e7f2)) by [@daveomri](https://github.com/daveomri)
+- Add apify_web_fetch tool and deprecate apify_scrape_url ([#16](https://github.com/apify/strands-apify/pull/16)) ([3ad482c](https://github.com/apify/strands-apify/commit/3ad482c2f154e8ec2e2626ac02180f413f8f61e0)) by [@daveomri](https://github.com/daveomri)
+- Clamp LLM-supplied limits and describe the ceilings ([#17](https://github.com/apify/strands-apify/pull/17)) ([4c930bb](https://github.com/apify/strands-apify/commit/4c930bb97eee4de54be9ff3fecd0dc988d6efdb1)) by [@daveomri](https://github.com/daveomri)
 
 
 <!-- git-cliff-unreleased-end -->
