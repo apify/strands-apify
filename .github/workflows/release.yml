@@ -51,7 +51,7 @@ jobs:
           echo "::error title=Missing custom_version::release_type is 'custom' but custom_version is empty. Provide a custom version (e.g. 0.1.0) and re-run the workflow."
           exit 1
 
-      - uses: apify/actions/git-cliff-release@v1.1.2
+      - uses: apify/actions/git-cliff-release@v1.2.0
         name: Prepare release metadata
         id: release_metadata
         with:
@@ -123,7 +123,7 @@ jobs:
       url: https://pypi.org/project/strands-apify
     steps:
       - name: Prepare distribution
-        uses: apify/actions/prepare-pypi-distribution@v1.1.2
+        uses: apify/actions/prepare-pypi-distribution@v1.2.0
         with:
           # Build from the exact post-bump commit so the wheel's version metadata
           # matches the tag created by create_github_release.
