@@ -66,7 +66,7 @@ jobs:
     # Bumps pyproject.toml to the next base version and overwrites CHANGELOG.md, then
     # commits and pushes to main via apify/actions/signed-commit (commit carries
     # [skip ci]). Works because workflow_dispatch from main keeps HEAD on the branch.
-    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@v0.45.0
+    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@v0.45.1
     with:
       version_number: ${{ needs.release_metadata.outputs.version_number }}
       changelog: ${{ needs.release_metadata.outputs.changelog }}
