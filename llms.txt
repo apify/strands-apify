@@ -28,7 +28,7 @@ from strands_apify import (
     APIFY_CORE_TOOLS,    # 6 generic platform tools
     APIFY_SOCIAL_TOOLS,  # 7 social media scrapers
     APIFY_SEARCH_TOOLS,  # 5 search / crawl / e-commerce tools
-    APIFY_ALL_TOOLS,     # all 18 tools combined
+    APIFY_ALL_TOOLS,     # all 18 preset tools combined
 )
 
 # Individual tools - import what you need
@@ -39,7 +39,7 @@ from strands_apify import (
     apify_run_actor_and_get_dataset,
     apify_run_task,
     apify_run_task_and_get_dataset,
-    apify_scrape_url,
+    apify_web_fetch,
     # Social media
     apify_instagram_scraper,
     apify_linkedin_profile_posts,
@@ -54,6 +54,8 @@ from strands_apify import (
     apify_youtube_scraper,
     apify_website_content_crawler,
     apify_ecommerce_scraper,
+    # Deprecated
+    apify_scrape_url,  # use apify_web_fetch
 )
 
 # Low-level client wrapper, exposed for advanced use cases
@@ -75,15 +77,16 @@ agent("Scrape https://example.com and summarize the content.")
 ### Core (6) - `APIFY_CORE_TOOLS`
 
 Generic Apify platform access - run any Actor or saved task, fetch dataset items,
-scrape a single URL.
+fetch a single web page.
 
 - `apify_run_actor(actor_id, run_input=None, ...)` - run any Actor, return run metadata.
 - `apify_get_dataset_items(dataset_id, limit=100, offset=0)` - fetch items from a dataset.
 - `apify_run_actor_and_get_dataset(actor_id, run_input=None, ...)` - run + fetch in one call.
 - `apify_run_task(task_id, task_input=None, ...)` - run a saved task.
 - `apify_run_task_and_get_dataset(task_id, task_input=None, ...)` - run task + fetch.
-- `apify_scrape_url(url, crawler_type="cheerio", ...)` - single-URL → Markdown.
-  Crawler types: `cheerio` (fastest), `playwright:adaptive`, `playwright:firefox`.
+- `apify_web_fetch(url, formats=None, headers=None, wait_ms=None, ...)` - single URL via
+  `apify/web-fetch` in standby mode. Formats: `markdown` (default), `html`, `text`, `links`, `raw`.
+  Returns `url`, `final_url`, `title`, `http_status` (the target page's status) and one key per format.
 
 ### Social media (7) - `APIFY_SOCIAL_TOOLS`
 
@@ -102,6 +105,10 @@ scrape a single URL.
 - `apify_youtube_scraper` → `streamers/youtube-scraper`
 - `apify_website_content_crawler` → `apify/website-content-crawler` (multi-page crawl)
 - `apify_ecommerce_scraper` → `apify/e-commerce-scraping-tool`
+
+### Deprecated (1)
+- `apify_scrape_url(url, crawler_type="cheerio", ...)` - deprecated, use `apify_web_fetch`.
+  Not in `APIFY_CORE_TOOLS`; still importable directly, works and emits a `FutureWarning`.
 
 ## Return shape
 
@@ -122,7 +129,8 @@ never raise out, so the agent's reasoning loop is not interrupted.
 - `APIFY_ALL_TOOLS` exists for convenience but registering 18 tools at once can
   overwhelm an LLM. Prefer the focused presets or individual imports.
 - Each tool calls Apify Actors synchronously via the `apify-client` package and
-  blocks until the run completes (or hits `timeout_secs`).
+  blocks until the run completes (or hits `timeout_secs`). `apify_web_fetch` is the
+  exception: it sends one HTTP request to the Web Fetch Actor in standby mode.
 - Numeric values the agent supplies are capped before calling Apify: `timeout_secs`
   600, `memory_mbytes` 32768 (snapped to a power of 2), item limits (`limit`,
   `dataset_items_limit`, `results_limit`, `search_limit`, `max_reviews`, `max_pages`)
