@@ -21,7 +21,14 @@ from strands_apify.core import (
     apify_scrape_url,
     apify_web_fetch,
 )
-from strands_apify.utils import TRACKING_HEADER, WEB_FETCH_URL, ApifyToolClient
+from strands_apify.utils import (
+    MAX_ITEMS,
+    MAX_MEMORY_MBYTES,
+    MAX_TIMEOUT_SECS,
+    TRACKING_HEADER,
+    WEB_FETCH_URL,
+    ApifyToolClient,
+)
 
 MOCK_SCRAPED_ITEM = {
     "url": "https://example.com",
@@ -177,6 +184,80 @@ def test_scrape_url_passes_run_timeout(mock_apify_env, mock_apify_client):
     call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
     assert call_kwargs["run_timeout"] == timedelta(seconds=42)
     assert "timeout_secs" not in call_kwargs
+
+
+def test_run_actor_clamps_timeout_and_memory(mock_apify_env, mock_apify_client):
+    """An oversized timeout reaches `.call()` capped, and memory is snapped to a power of 2."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        result = apify_run_actor(actor_id="actor/my-scraper", timeout_secs=86400, memory_mbytes=12345)
+
+    assert result["status"] == "success"
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    assert call_kwargs["run_timeout"] == timedelta(seconds=MAX_TIMEOUT_SECS)
+    assert call_kwargs["memory_mbytes"] == 16384
+
+
+def test_run_task_clamps_timeout_and_memory(mock_apify_env, mock_apify_client):
+    """Task runs get the same timeout and memory ceilings as Actor runs."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        result = apify_run_task(task_id="user~my-task", timeout_secs=86400, memory_mbytes=100_000)
+
+    assert result["status"] == "success"
+    call_kwargs = mock_apify_client.task.return_value.call.call_args.kwargs
+    assert call_kwargs["run_timeout"] == timedelta(seconds=MAX_TIMEOUT_SECS)
+    assert call_kwargs["memory_mbytes"] == MAX_MEMORY_MBYTES
+
+
+@ignore_scrape_deprecation
+def test_scrape_url_clamps_timeout(mock_apify_env, mock_apify_client):
+    """An oversized scrape timeout reaches `.call()` capped."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_scrape_url(url="https://example.com", timeout_secs=86400)
+
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    assert call_kwargs["run_timeout"] == timedelta(seconds=MAX_TIMEOUT_SECS)
+
+
+def test_web_fetch_clamps_timeout(mock_apify_env, mock_impit_client):
+    """An oversized Web Fetch timeout reaches the HTTP client capped."""
+    apify_web_fetch(url="https://example.com", timeout_secs=86400)
+
+    mock_impit_client.assert_called_once_with(timeout=MAX_TIMEOUT_SECS)
+
+
+def test_get_dataset_items_clamps_limit(mock_apify_env, mock_apify_client):
+    """An oversized `limit` reaches `list_items()` capped."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_get_dataset_items(dataset_id="dataset-123", limit=1_000_000)
+
+    mock_apify_client.dataset.return_value.list_items.assert_called_once_with(limit=MAX_ITEMS, offset=0)
+
+
+def test_run_actor_and_get_dataset_clamps_dataset_items_limit(mock_apify_env, mock_apify_client):
+    """An oversized `dataset_items_limit` reaches `list_items()` capped after an Actor run."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_run_actor_and_get_dataset(actor_id="actor/my-scraper", dataset_items_limit=1_000_000)
+
+    mock_apify_client.dataset.return_value.list_items.assert_called_once_with(limit=MAX_ITEMS, offset=0)
+
+
+def test_run_task_and_get_dataset_clamps_dataset_items_limit(mock_apify_env, mock_apify_client):
+    """An oversized `dataset_items_limit` reaches `list_items()` capped after a task run."""
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_run_task_and_get_dataset(task_id="user~my-task", dataset_items_limit=1_000_000)
+
+    mock_apify_client.dataset.return_value.list_items.assert_called_once_with(limit=MAX_ITEMS, offset=0)
+
+
+def test_timeout_ceiling_can_be_raised_from_the_environment(monkeypatch, mock_apify_env, mock_apify_client):
+    """A developer can allow longer runs than the default ceiling."""
+    monkeypatch.setenv("STRANDS_APIFY_MAX_TIMEOUT_SECS", "3600")
+
+    with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
+        apify_run_actor(actor_id="actor/my-scraper", timeout_secs=3600)
+
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    assert call_kwargs["run_timeout"] == timedelta(seconds=3600)
 
 
 def test_run_actor_failure(mock_apify_env, mock_apify_client):
