@@ -7,20 +7,25 @@ Available Tools:
 - apify_run_actor_and_get_dataset: Run an Actor and fetch results in one step
 - apify_run_task: Run a saved Actor task with optional input overrides
 - apify_run_task_and_get_dataset: Run a task and fetch results in one step
-- apify_scrape_url: Scrape a single URL and return content as Markdown
+- apify_web_fetch: Fetch a single URL as Markdown, HTML, text, links or raw content
+- apify_scrape_url: Deprecated, use apify_web_fetch
 """
 
 import json
+import warnings
 from typing import Any
 
+from rich.markup import escape
 from strands import tool
 
 from .utils import (
     DEFAULT_DATASET_ITEMS_LIMIT,
     DEFAULT_SCRAPE_TIMEOUT_SECS,
     DEFAULT_TIMEOUT_SECS,
+    DEFAULT_WEB_FETCH_TIMEOUT_SECS,
     ApifyToolClient,
     CrawlerType,
+    WebFetchFormat,
     _check_dependency,
     _error_result,
     _success_result,
@@ -41,7 +46,7 @@ def apify_run_actor(
     runs the scraping or automation job, and writes results to a dataset. This tool
     executes the Actor synchronously and returns run metadata only (run_id, status,
     dataset_id, timestamps). Use apify_run_actor_and_get_dataset to also fetch the
-    output data in one call, or apify_scrape_url for quick single-URL extraction.
+    output data in one call, or apify_web_fetch for quick single-URL extraction.
 
     Common Actors:
     - "apify/website-content-crawler" - scrape websites and extract content as Markdown
@@ -283,29 +288,78 @@ def apify_run_task_and_get_dataset(
 
 
 @tool
+def apify_web_fetch(
+    url: str,
+    formats: list[WebFetchFormat] | None = None,
+    headers: dict[str, str] | None = None,
+    wait_ms: int | None = None,
+    timeout_secs: int = DEFAULT_WEB_FETCH_TIMEOUT_SECS,
+) -> dict[str, Any]:
+    """Fetch a single web page and return its content as Markdown, HTML, plain text, links or raw content.
+
+    Uses the Web Fetch Actor (`apify/web-fetch`), which answers in one real-time request and works around bot
+    protection on its own. This is the fastest way to read one page. Set wait_ms for pages that load their content
+    with JavaScript after the initial load. For multi-page crawls, use apify_run_actor_and_get_dataset with
+    "apify/website-content-crawler".
+
+    Args:
+        url: The URL to fetch, e.g. "https://example.com". Only http and https URLs are supported.
+        formats: Output formats to return. Any of "markdown", "html", "text", "links" (a deduplicated list of the
+            page's links) and "raw" (the original bytes, base64-encoded for binary content). Defaults to
+            ["markdown"]. Prefer "markdown" or "text" for web pages and documents: "html" and "raw" are much larger.
+            Pass ["raw"] for images, archives and other binary content, because the fetch fails when none of the
+            requested formats apply.
+        headers: Optional HTTP headers to send to the target URL, e.g. {"Accept-Language": "fr-FR"}.
+        wait_ms: Optional milliseconds to wait after the page loads, from 1 to 60000. Setting it renders the page
+            in a real browser so content loaded later by JavaScript is included, but makes the request slower.
+        timeout_secs: Maximum time in seconds to wait for the response. Defaults to 180.
+
+    Returns:
+        Dict with status and content containing JSON with url, final_url (after redirects), title, http_status
+        (the target page's own HTTP status, e.g. 404 for a missing page) and one key per requested format.
+        A requested format that does not apply to the page is null, as long as at least one other format applies.
+    """
+    try:
+        _check_dependency()
+        client = ApifyToolClient()
+        result = client.web_fetch(url=url, formats=formats, headers=headers, wait_ms=wait_ms, timeout_secs=timeout_secs)
+        return _success_result(
+            text=json.dumps(result, indent=2, default=str),
+            panel_body=(
+                f"[green]URL fetched[/green]\n"
+                f"URL: {escape(str(result['final_url']))}\n"
+                f"HTTP status: {result['http_status']}\n"
+                f"Title: {escape(str(result['title']))}"
+            ),
+            panel_title="Apify: Web Fetch",
+        )
+    except Exception as e:
+        return _error_result(e, "apify_web_fetch")
+
+
+@tool
 def apify_scrape_url(
     url: str,
     timeout_secs: int = DEFAULT_SCRAPE_TIMEOUT_SECS,
     crawler_type: CrawlerType = "cheerio",
 ) -> dict[str, Any]:
-    """Scrape a single URL and return its content as Markdown.
-
-    Uses the Website Content Crawler Actor under the hood, pre-configured for
-    fast single-page scraping. This is the simplest way to extract readable content
-    from any web page - no Actor input schema needed. For multi-page crawls, use
-    apify_run_actor_and_get_dataset with "apify/website-content-crawler" directly.
+    """Deprecated: use apify_web_fetch instead. Scrape a single URL and return its content as Markdown.
 
     Args:
         url: The URL to scrape, e.g. "https://example.com".
         timeout_secs: Maximum time in seconds to wait for scraping to finish. Defaults to 120.
-        crawler_type: Crawler engine to use. One of:
-            - "cheerio" (default): Fastest, no JavaScript rendering. Best for static HTML.
-            - "playwright:adaptive": Renders JS only when needed. Good general-purpose choice.
-            - "playwright:firefox": Full JS rendering, best at bypassing anti-bot protection but slowest.
+        crawler_type: Website Content Crawler engine: "cheerio" (default), "playwright:adaptive" or
+            "playwright:firefox".
 
     Returns:
         Dict with status and content containing the Markdown content of the scraped page.
     """
+    warnings.warn(
+        "apify_scrape_url is deprecated and will be removed in a future release. Use apify_web_fetch.",
+        FutureWarning,
+        # Strands' tool wrapper adds a frame between the caller and this function.
+        stacklevel=3,
+    )
     try:
         _check_dependency()
         client = ApifyToolClient()
@@ -327,5 +381,5 @@ APIFY_CORE_TOOLS = [
     apify_run_actor_and_get_dataset,
     apify_run_task,
     apify_run_task_and_get_dataset,
-    apify_scrape_url,
+    apify_web_fetch,
 ]

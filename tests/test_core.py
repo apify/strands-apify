@@ -1,11 +1,15 @@
 """Tests for the Apify core tools."""
 
+import io
 import json
 from datetime import timedelta
+from typing import Any
 from unittest.mock import MagicMock, patch
 
+import impit
 import pytest
 from conftest import MOCK_FAILED_RUN, MOCK_TIMED_OUT_RUN
+from rich.console import Console
 
 from strands_apify import core as apify_core
 from strands_apify.core import (
@@ -15,14 +19,43 @@ from strands_apify.core import (
     apify_run_task,
     apify_run_task_and_get_dataset,
     apify_scrape_url,
+    apify_web_fetch,
 )
-from strands_apify.utils import ApifyToolClient
+from strands_apify.utils import TRACKING_HEADER, WEB_FETCH_URL, ApifyToolClient
 
 MOCK_SCRAPED_ITEM = {
     "url": "https://example.com",
     "markdown": "# Example Domain\n\nThis domain is for use in illustrative examples.",
     "text": "Example Domain. This domain is for use in illustrative examples.",
 }
+
+MOCK_WEB_FETCH_BODY = {
+    "url": "https://example.com",
+    "fetch": {"loadedUrl": "https://example.com/", "httpStatusCode": 200, "contentType": "text/html; charset=utf-8"},
+    "metadata": {"title": "Example Domain"},
+    "markdown": "# Example Domain\n\nThis domain is for use in illustrative examples.",
+}
+
+# apify_scrape_url is deprecated; tests that call it for other reasons ignore its FutureWarning.
+ignore_scrape_deprecation = pytest.mark.filterwarnings("ignore:apify_scrape_url is deprecated:FutureWarning")
+
+
+def _web_fetch_response(status_code: int, body: Any) -> impit.Response:
+    """Build a real impit response; `bytes` bodies are sent as-is, anything else as JSON."""
+    content = body if isinstance(body, bytes) else json.dumps(body).encode()
+    return impit.Response(status_code, content=content)
+
+
+@pytest.fixture
+def mock_impit_client():
+    """Patch `impit.Client` and return the class mock; the `with` block yields `.return_value.__enter__`."""
+    with patch("strands_apify.utils.impit.Client") as client_cls:
+        client_cls.return_value.__enter__.return_value.post.return_value = _web_fetch_response(200, MOCK_WEB_FETCH_BODY)
+        yield client_cls
+
+
+def _mock_post(client_cls: MagicMock) -> MagicMock:
+    return client_cls.return_value.__enter__.return_value.post
 
 
 def _make_apify_api_error(status_code: int, message: str) -> Exception:
@@ -135,6 +168,7 @@ def test_run_task_passes_run_timeout(mock_apify_env, mock_apify_client):
     assert "timeout_secs" not in call_kwargs
 
 
+@ignore_scrape_deprecation
 def test_scrape_url_passes_run_timeout(mock_apify_env, mock_apify_client):
     """Scrape `timeout_secs` is forwarded to `.call()` as a `run_timeout` timedelta."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
@@ -400,9 +434,271 @@ def test_run_task_and_get_dataset_task_failure(mock_apify_env, mock_apify_client
     assert "FAILED" in result["content"][0]["text"]
 
 
+# --- apify_web_fetch ---
+
+
+def test_web_fetch_success(mock_apify_env, mock_impit_client):
+    """apify_web_fetch posts to the standby endpoint and returns the requested format with metadata."""
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "success"
+    data = json.loads(result["content"][0]["text"])
+    assert data == {
+        "url": "https://example.com",
+        "final_url": "https://example.com/",
+        "title": "Example Domain",
+        "http_status": 200,
+        "markdown": MOCK_WEB_FETCH_BODY["markdown"],
+    }
+
+    post_kwargs = _mock_post(mock_impit_client).call_args.kwargs
+    assert _mock_post(mock_impit_client).call_args.args == (WEB_FETCH_URL,)
+    assert json.loads(post_kwargs["content"]) == {"url": "https://example.com", "formats": ["markdown"]}
+    assert post_kwargs["headers"] == {
+        **TRACKING_HEADER,
+        "Authorization": "Bearer apify_api_test-token-12345",
+        "Content-Type": "application/json",
+    }
+    mock_impit_client.assert_called_once_with(timeout=180)
+    mock_impit_client.return_value.__exit__.assert_called_once()
+
+
+def test_web_fetch_passes_options(mock_apify_env, mock_impit_client):
+    """Formats, target headers, `wait_ms` and `timeout_secs` reach the request; target headers stay in the body."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(
+        200, {**MOCK_WEB_FETCH_BODY, "text": "Example Domain", "links": []}
+    )
+
+    result = apify_web_fetch(
+        url="https://example.com",
+        formats=["text", "links"],
+        headers={"Accept-Language": "fr-FR"},
+        wait_ms=500,
+        timeout_secs=42,
+    )
+
+    assert result["status"] == "success"
+    data = json.loads(result["content"][0]["text"])
+    assert data["text"] == "Example Domain"
+    assert data["links"] == []
+    assert "markdown" not in data
+
+    mock_impit_client.assert_called_once_with(timeout=42)
+    post_kwargs = _mock_post(mock_impit_client).call_args.kwargs
+    assert json.loads(post_kwargs["content"]) == {
+        "url": "https://example.com",
+        "formats": ["text", "links"],
+        "headers": {"Accept-Language": "fr-FR"},
+        "wait": 500,
+    }
+    assert "Accept-Language" not in post_kwargs["headers"]
+
+
+def test_web_fetch_empty_formats_defaults_to_markdown(mock_apify_env, mock_impit_client):
+    """An empty `formats` list falls back to markdown instead of letting the Actor auto-select a format."""
+    result = apify_web_fetch(url="https://example.com", formats=[])
+
+    assert result["status"] == "success"
+    assert json.loads(result["content"][0]["text"])["markdown"] == MOCK_WEB_FETCH_BODY["markdown"]
+    assert json.loads(_mock_post(mock_impit_client).call_args.kwargs["content"])["formats"] == ["markdown"]
+
+
+def test_web_fetch_target_http_error_returns_content(mock_apify_env, mock_impit_client):
+    """A target 4xx arrives as a 200 from Web Fetch; the tool succeeds and reports the page's own status."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(
+        200,
+        {
+            "fetch": {"loadedUrl": "https://example.com/missing", "httpStatusCode": 404},
+            "metadata": {"title": "Page not found"},
+            "markdown": "# Page not found",
+        },
+    )
+
+    result = apify_web_fetch(url="https://example.com/missing")
+
+    assert result["status"] == "success"
+    data = json.loads(result["content"][0]["text"])
+    assert data["http_status"] == 404
+    assert data["markdown"] == "# Page not found"
+
+
+def test_web_fetch_without_fetch_metadata(mock_apify_env, mock_impit_client):
+    """Without `fetch` and `metadata`, the requested URL is reported and status and title are null."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(200, {"markdown": "# Example"})
+
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "success"
+    data = json.loads(result["content"][0]["text"])
+    assert data["final_url"] == "https://example.com"
+    assert data["http_status"] is None
+    assert data["title"] is None
+    assert data["markdown"] == "# Example"
+
+
+def test_web_fetch_actor_error(mock_apify_env, mock_impit_client):
+    """An Actor error (`{"error": str, "code": str}`) is reported with its status and code."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(
+        502, {"error": 'Failed to fetch "https://example.com".', "code": "UPSTREAM_FETCH_ERROR"}
+    )
+
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "error"
+    text = result["content"][0]["text"]
+    assert "status 502" in text
+    assert "Failed to fetch" in text
+    assert "UPSTREAM_FETCH_ERROR" in text
+
+
+def test_web_fetch_actor_error_without_code(mock_apify_env, mock_impit_client):
+    """An Actor error without `code` is reported with its message only."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(400, {"error": "Invalid input."})
+
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "error"
+    assert result["content"][0]["text"] == "Web Fetch failed with status 400: Invalid input."
+
+
+def test_web_fetch_error_without_message(mock_apify_env, mock_impit_client):
+    """An error body without an `error` field reports only the HTTP status."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(400, {})
+
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "error"
+    assert result["content"][0]["text"] == "Web Fetch failed with status 400"
+
+
+def test_web_fetch_gateway_error(mock_apify_env, mock_impit_client):
+    """A standby gateway error (`{"error": {"type", "message"}}`) is reported with its message."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(
+        401, {"error": {"type": "api-token-missing", "message": "You need to pass your Apify API token."}}
+    )
+
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "error"
+    assert "status 401: You need to pass your Apify API token." in result["content"][0]["text"]
+
+
+def test_web_fetch_non_json_error_page(mock_apify_env, mock_impit_client):
+    """A gateway error page that is not JSON still reports the HTTP status."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(502, b"<html>Bad Gateway</html>")
+
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "error"
+    assert result["content"][0]["text"] == "Web Fetch failed with status 502"
+
+
+def test_web_fetch_invalid_json_success_body(mock_apify_env, mock_impit_client):
+    """A 200 response that is not JSON is an error, not a crash."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(200, b"not json")
+
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "error"
+    assert "not valid JSON" in result["content"][0]["text"]
+
+
+def test_web_fetch_non_object_success_body(mock_apify_env, mock_impit_client):
+    """A 200 response whose JSON is not an object is an error."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(200, ["unexpected"])
+
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "error"
+    assert "unexpected response body" in result["content"][0]["text"]
+
+
+@pytest.mark.parametrize(
+    ("error", "reason"),
+    [
+        (
+            impit.ConnectError("Failed to connect to the server.\nReason: hyper_util::client::legacy::Error(...)"),
+            "Failed to connect to the server.",
+        ),
+        (impit.ReadTimeout("Request timeout (180000 ms) exceeded."), "Request timeout (180000 ms) exceeded."),
+        (impit.ConnectError(""), ""),
+    ],
+)
+def test_web_fetch_transport_error(mock_apify_env, mock_impit_client, error, reason):
+    """A transport failure reports only the readable first line of the impit error, even when it is empty."""
+    _mock_post(mock_impit_client).side_effect = error
+
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "error"
+    assert result["content"][0]["text"] == f"Request to Web Fetch at {WEB_FETCH_URL} failed: {reason}"
+
+
+def test_web_fetch_panel_escapes_page_markup(mock_apify_env, mock_impit_client):
+    """A page title with Rich markup is shown literally instead of failing the fetch."""
+    _mock_post(mock_impit_client).return_value = _web_fetch_response(
+        200, {**MOCK_WEB_FETCH_BODY, "metadata": {"title": "[/b] Closing tag"}}
+    )
+    output = io.StringIO()
+
+    with (
+        patch("strands_apify.utils._panels_enabled", return_value=True),
+        patch("strands_apify.utils.console", Console(file=output, width=200)),
+    ):
+        result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "success"
+    assert "[/b] Closing tag" in output.getvalue()
+
+
+def test_web_fetch_invalid_url(mock_apify_env, mock_impit_client):
+    """An invalid URL fails before any request is sent."""
+    result = apify_web_fetch(url="ftp://example.com")
+
+    assert result["status"] == "error"
+    assert "Invalid URL scheme" in result["content"][0]["text"]
+    _mock_post(mock_impit_client).assert_not_called()
+
+
+def test_web_fetch_zero_timeout(mock_apify_env, mock_impit_client):
+    """A non-positive `timeout_secs` fails before any request is sent."""
+    result = apify_web_fetch(url="https://example.com", timeout_secs=0)
+
+    assert result["status"] == "error"
+    assert "timeout_secs" in result["content"][0]["text"]
+    _mock_post(mock_impit_client).assert_not_called()
+
+
 # --- apify_scrape_url ---
 
 
+def test_scrape_url_deprecation_warning(mock_apify_env, mock_apify_client):
+    """apify_scrape_url still works but warns and points to apify_web_fetch."""
+    mock_list_result = MagicMock()
+    mock_list_result.items = [MOCK_SCRAPED_ITEM]
+    mock_apify_client.dataset.return_value.list_items.return_value = mock_list_result
+
+    with (
+        patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client),
+        pytest.warns(FutureWarning, match="apify_web_fetch") as record,
+    ):
+        result = apify_scrape_url(url="https://example.com")
+
+    assert result["status"] == "success"
+    assert record[0].filename == __file__, "the warning should point at the caller, not at strands internals"
+
+
+def test_scrape_url_is_left_out_of_the_presets():
+    """Agents built from a preset only get apify_web_fetch; the deprecated tool is still importable."""
+    import strands_apify
+
+    assert apify_web_fetch in strands_apify.APIFY_CORE_TOOLS
+    assert apify_scrape_url not in strands_apify.APIFY_CORE_TOOLS
+    assert apify_scrape_url not in strands_apify.APIFY_ALL_TOOLS
+    assert strands_apify.apify_scrape_url is apify_scrape_url
+
+
+@ignore_scrape_deprecation
 def test_scrape_url_success(mock_apify_env, mock_apify_client):
     """Scrape URL returns structured result with markdown content."""
     mock_list_result = MagicMock()
@@ -417,6 +713,7 @@ def test_scrape_url_success(mock_apify_env, mock_apify_client):
     mock_apify_client.actor.assert_called_once_with("apify/website-content-crawler")
 
 
+@ignore_scrape_deprecation
 def test_scrape_url_none_response(mock_apify_env, mock_apify_client):
     """Scrape URL returns error dict when ActorClient.call() returns None."""
     mock_apify_client.actor.return_value.call.return_value = None
@@ -428,6 +725,7 @@ def test_scrape_url_none_response(mock_apify_env, mock_apify_client):
     assert "no run data" in result["content"][0]["text"]
 
 
+@ignore_scrape_deprecation
 def test_scrape_url_no_content(mock_apify_env, mock_apify_client):
     """Scrape URL returns error dict when no content is returned."""
     mock_list_result = MagicMock()
@@ -441,6 +739,7 @@ def test_scrape_url_no_content(mock_apify_env, mock_apify_client):
     assert "No content returned" in result["content"][0]["text"]
 
 
+@ignore_scrape_deprecation
 def test_scrape_url_crawler_failure(mock_apify_env, mock_apify_client):
     """Scrape URL returns error dict when the crawler Actor fails."""
     mock_apify_client.actor.return_value.call.return_value = MOCK_FAILED_RUN
@@ -452,6 +751,7 @@ def test_scrape_url_crawler_failure(mock_apify_env, mock_apify_client):
     assert "FAILED" in result["content"][0]["text"]
 
 
+@ignore_scrape_deprecation
 def test_scrape_url_falls_back_to_text(mock_apify_env, mock_apify_client):
     """Scrape URL falls back to text field when markdown is absent."""
     item_without_markdown = {"url": "https://example.com", "text": "Plain text content"}
@@ -466,6 +766,7 @@ def test_scrape_url_falls_back_to_text(mock_apify_env, mock_apify_client):
     assert result["content"][0]["text"] == "Plain text content"
 
 
+@ignore_scrape_deprecation
 def test_scrape_url_invalid_url_scheme(mock_apify_env):
     """apify_scrape_url returns error for invalid URL scheme."""
     result = apify_scrape_url(url="ftp://example.com")
@@ -474,6 +775,7 @@ def test_scrape_url_invalid_url_scheme(mock_apify_env):
     assert "Invalid URL scheme" in result["content"][0]["text"]
 
 
+@ignore_scrape_deprecation
 def test_scrape_url_missing_scheme(mock_apify_env):
     """apify_scrape_url returns error for URL without http/https scheme."""
     result = apify_scrape_url(url="example.com")
@@ -597,6 +899,7 @@ def test_run_task_and_get_dataset_negative_dataset_offset(mock_apify_env):
     assert "dataset_items_offset" in result["content"][0]["text"]
 
 
+@ignore_scrape_deprecation
 def test_scrape_url_zero_timeout(mock_apify_env):
     """apify_scrape_url returns error for non-positive timeout_secs."""
     result = apify_scrape_url(url="https://example.com", timeout_secs=0)
@@ -605,6 +908,7 @@ def test_scrape_url_zero_timeout(mock_apify_env):
     assert "timeout_secs" in result["content"][0]["text"]
 
 
+@ignore_scrape_deprecation
 def test_scrape_url_invalid_crawler_type(mock_apify_env):
     """apify_scrape_url returns error for unsupported crawler_type."""
     result = apify_scrape_url(url="https://example.com", crawler_type="invalid")
@@ -613,6 +917,7 @@ def test_scrape_url_invalid_crawler_type(mock_apify_env):
     assert "crawler_type" in result["content"][0]["text"]
 
 
+@ignore_scrape_deprecation
 def test_scrape_url_missing_domain(mock_apify_env):
     """apify_scrape_url returns error for URL with no domain."""
     result = apify_scrape_url(url="https://")
@@ -669,6 +974,17 @@ def test_missing_apify_client_run_task_and_get(mock_apify_env):
     assert "apify-client" in result["content"][0]["text"]
 
 
+def test_missing_apify_client_web_fetch(mock_apify_env, mock_impit_client):
+    """apify_web_fetch returns error dict when apify-client is not installed."""
+    with patch("strands_apify.utils.HAS_APIFY_CLIENT", False):
+        result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "error"
+    assert "apify-client" in result["content"][0]["text"]
+    _mock_post(mock_impit_client).assert_not_called()
+
+
+@ignore_scrape_deprecation
 def test_missing_apify_client_scrape_url(mock_apify_env):
     """apify_scrape_url returns error dict when apify-client is not installed."""
     with patch("strands_apify.utils.HAS_APIFY_CLIENT", False):
@@ -726,6 +1042,17 @@ def test_run_task_and_get_dataset_missing_token(monkeypatch):
     assert "APIFY_TOKEN" in result["content"][0]["text"]
 
 
+def test_web_fetch_missing_token(monkeypatch, mock_impit_client):
+    """apify_web_fetch returns error dict when APIFY_TOKEN is missing."""
+    monkeypatch.delenv("APIFY_TOKEN", raising=False)
+    result = apify_web_fetch(url="https://example.com")
+
+    assert result["status"] == "error"
+    assert "APIFY_TOKEN" in result["content"][0]["text"]
+    _mock_post(mock_impit_client).assert_not_called()
+
+
+@ignore_scrape_deprecation
 def test_scrape_url_missing_token(monkeypatch):
     """apify_scrape_url returns error dict when APIFY_TOKEN is missing."""
     monkeypatch.delenv("APIFY_TOKEN", raising=False)
