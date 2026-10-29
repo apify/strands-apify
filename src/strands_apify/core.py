@@ -322,7 +322,7 @@ def apify_web_fetch(
         headers: Optional HTTP headers to send to the target URL, e.g. {"Accept-Language": "fr-FR"}.
         wait_ms: Optional milliseconds to wait after the page loads, from 1 to 60000. Setting it renders the page
             in a real browser so content loaded later by JavaScript is included, but makes the request slower.
-        timeout_secs: Maximum time in seconds to wait for the response. Defaults to 180.
+        timeout_secs: Maximum time in seconds to wait for the response (clamped to 600 max by default). Defaults to 180.
 
     Returns:
         Dict with status and content containing JSON with url, final_url (after redirects), title, http_status

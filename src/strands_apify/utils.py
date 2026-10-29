@@ -386,6 +386,7 @@ class ApifyToolClient:
         """
         _validate_url(url)
         _validate_positive(timeout_secs, "timeout_secs")
+        timeout_secs = _clamp_timeout(timeout_secs)
         # An empty list makes the Actor pick a format itself, which this method could not map back into the result.
         formats = formats or ["markdown"]
 

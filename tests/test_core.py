@@ -218,6 +218,13 @@ def test_scrape_url_clamps_timeout(mock_apify_env, mock_apify_client):
     assert call_kwargs["run_timeout"] == timedelta(seconds=MAX_TIMEOUT_SECS)
 
 
+def test_web_fetch_clamps_timeout(mock_apify_env, mock_impit_client):
+    """An oversized Web Fetch timeout reaches the HTTP client capped."""
+    apify_web_fetch(url="https://example.com", timeout_secs=86400)
+
+    mock_impit_client.assert_called_once_with(timeout=MAX_TIMEOUT_SECS)
+
+
 def test_get_dataset_items_clamps_limit(mock_apify_env, mock_apify_client):
     """An oversized `limit` reaches `list_items()` capped."""
     with patch("strands_apify.utils.ApifyClient", return_value=mock_apify_client):
