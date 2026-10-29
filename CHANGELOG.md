@@ -2,8 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-<!-- git-cliff-unreleased-start -->
-## 0.1.3 - **not yet released**
+## [0.2.0](https://github.com/apify/strands-apify/releases/tag/v0.2.0) (2026-10-29)
 
 ### 🚀 Features
 
@@ -12,7 +11,6 @@ All notable changes to this project will be documented in this file.
 - Clamp LLM-supplied limits and describe the ceilings ([#17](https://github.com/apify/strands-apify/pull/17)) ([4c930bb](https://github.com/apify/strands-apify/commit/4c930bb97eee4de54be9ff3fecd0dc988d6efdb1)) by [@daveomri](https://github.com/daveomri)
 
 
-<!-- git-cliff-unreleased-end -->
 ## [0.1.2](https://github.com/apify/strands-apify/releases/tag/v0.1.2) (2026-09-09)
 
 
