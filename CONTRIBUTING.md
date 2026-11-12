@@ -25,7 +25,7 @@ Or run individually:
 ```bash
 uv run poe format      # Fix lint issues and format code
 uv run poe lint        # ruff format --check and ruff check
-uv run poe type-check  # mypy
+uv run poe type-check  # ty
 uv run poe unit-tests  # pytest
 ```
 

@@ -44,7 +44,7 @@ dev = [
     "pytest-asyncio>=0.25.0,<1.0.0",
     "pytest-cov<8.0.0",
     "ruff~=0.17.0",
-    "mypy>=1.15.0,<2.0.0",
+    "ty~=0.0.0",
 ]
 
 [tool.uv.build-backend]
@@ -60,10 +60,10 @@ source-include = [
 
 # Run tasks with: uv run poe <task>
 [tool.poe.tasks]
-clean = { cmd = "rm -rf .coverage .mypy_cache .pytest_cache .ruff_cache build dist htmlcov", help = "Remove build artifacts and clean caches" }
+clean = { cmd = "rm -rf .coverage .pytest_cache .ruff_cache .ty_cache build dist htmlcov", help = "Remove build artifacts and clean caches" }
 install-dev = { cmd = "uv sync", help = "Install development dependencies" }
 build = { cmd = "uv build", help = "Build the package" }
-type-check = { cmd = "uv run mypy src", help = "Run the type checker" }
+type-check = { cmd = "uv run ty check", help = "Run the type checker" }
 unit-tests = { cmd = "uv run pytest tests", help = "Run unit tests" }
 unit-tests-cov = { cmd = "uv run pytest --cov=strands_apify --cov-report=xml:coverage-unit.xml tests", help = "Run unit tests with an XML coverage report" }
 check-code = { sequence = ["lint", "type-check", "unit-tests"], help = "Run all checks and unit tests" }
@@ -145,10 +145,14 @@ max-branches = 18
 fixture-parentheses = false
 mark-parentheses = false
 
-[tool.mypy]
-python_version = "3.11"
-strict = true
-ignore_missing_imports = true
+[tool.ty.environment]
+python-version = "3.11"
+
+[tool.ty.src]
+include = ["src", "tests"]
+
+[tool.ty.rules]
+unused-ignore-comment = "error"
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers --strict-config --durations=5"

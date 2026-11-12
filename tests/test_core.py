@@ -1069,7 +1069,8 @@ def test_scrape_url_zero_timeout() -> None:
 @pytest.mark.usefixtures('mock_apify_env')
 def test_scrape_url_invalid_crawler_type() -> None:
     """apify_scrape_url returns error for unsupported crawler_type."""
-    result = apify_scrape_url(url='https://example.com', crawler_type='invalid')
+    # An agent can send any string, so the invalid value is passed on purpose.
+    result = apify_scrape_url(url='https://example.com', crawler_type='invalid')  # ty: ignore[invalid-argument-type]
 
     assert result['status'] == 'error'
     assert 'crawler_type' in result['content'][0]['text']
