@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/strands-apify.svg)](https://pypi.org/project/strands-apify/)
 [![Python versions](https://img.shields.io/pypi/pyversions/strands-apify.svg)](https://pypi.org/project/strands-apify/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Code checks](https://github.com/apify/strands-apify/actions/workflows/run_code_checks.yml/badge.svg?branch=main)](https://github.com/apify/strands-apify/actions/workflows/run_code_checks.yml)
+[![Code checks](https://github.com/apify/strands-apify/actions/workflows/on_main.yaml/badge.svg?branch=main)](https://github.com/apify/strands-apify/actions/workflows/on_main.yaml)
 
 Apify tools for the [Strands Agents SDK](https://strandsagents.com/) - web scraping, social media, search, and automation.
 
