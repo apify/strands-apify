@@ -67,8 +67,9 @@ install-dev = { cmd = "uv sync", help = "Install development dependencies" }
 build = { cmd = "uv build", help = "Build the package" }
 type-check = { cmd = "uv run ty check", help = "Run the type checker" }
 spell-check = { cmd = "uv run typos", help = "Check spelling" }
-unit-tests = { cmd = "uv run pytest tests", help = "Run unit tests" }
-unit-tests-cov = { cmd = "uv run pytest --cov=strands_apify --cov-report=xml:coverage-unit.xml tests", help = "Run unit tests with an XML coverage report" }
+unit-tests = { cmd = "uv run pytest tests/unit", help = "Run unit tests" }
+unit-tests-cov = { cmd = "uv run pytest --cov=strands_apify --cov-report=xml:coverage-unit.xml tests/unit", help = "Run unit tests with an XML coverage report" }
+integration-tests = { cmd = "uv run pytest tests/integration", help = "Run integration tests against the Apify platform" }
 check-code = { sequence = ["lint", "type-check", "spell-check", "unit-tests"], help = "Run all checks and unit tests" }
 
 [tool.poe.tasks.lint]

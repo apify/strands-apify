@@ -29,6 +29,14 @@ uv run poe type-check  # ty
 uv run poe unit-tests  # pytest
 ```
 
+CI also runs the integration tests in `tests/integration` against the Apify platform with its own token, on `main` and
+on pull requests from branches in this repository. Pull requests from forks skip them, because forks don't get the
+token. To run them yourself:
+
+```bash
+APIFY_TOKEN=... uv run poe integration-tests
+```
+
 ## Submitting changes
 
 1. Fork the repository

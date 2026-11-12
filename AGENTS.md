@@ -20,7 +20,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tasks, PR conventions and rel
 - Strands builds the tool spec from the annotations at runtime, so imports used in `@tool` signatures stay outside
   `TYPE_CHECKING` blocks.
 - Numeric values the LLM supplies go through the `_clamp_*` helpers in `utils.py`. A clamped parameter's description
-  states its ceiling as `(clamped to N max by default)`, which `tests/test_clamp_descriptions.py` checks.
+  states its ceiling as `(clamped to N max by default)`, which `tests/unit/test_clamp_descriptions.py` checks.
 - API access goes through `ApifyToolClient`. It reads `APIFY_TOKEN` and sends the
   `x-apify-integration-platform: strands-agents` tracking header. Keep both.
 - Apify Console links to the API token page (`console.apify.com/settings/integrations`) carry
@@ -37,7 +37,11 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tasks, PR conventions and rel
 ## Tests
 
 New or changed tools need tests for: happy path, missing `APIFY_TOKEN`, missing `apify-client`, Actor failure and at
-least one input-validation failure. Mock `ApifyClient` at the boundary (see `tests/conftest.py`).
+least one input-validation failure. Unit tests live in `tests/unit` and mock `ApifyClient` at the boundary (see
+`tests/unit/conftest.py`).
+
+Integration tests in `tests/integration` call the real Apify API with the `APIFY_TOKEN` token and skip without it. Keep
+Actor runs few and small.
 
 ## Conventions
 
