@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"
 
 [project]
 name = "strands-apify"
@@ -8,7 +8,8 @@ version = "0.2.0"
 description = "Apify web scraping, social media, search and automation tools for Strands Agents SDK"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 authors = [
     {name = "Apify", email = "support@apify.com"}
 ]
@@ -16,7 +17,6 @@ keywords = ["strands", "agents", "ai", "tool", "apify", "web-scraping", "automat
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -47,24 +47,15 @@ dev = [
     "mypy>=1.15.0,<2.0.0",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/strands_apify"]
-
-# Source distribution - explicit allowlist so personal/local-only paths
-# (.personal_testing/, .claude/, docs-submission/, etc.) never reach PyPI.
-[tool.hatch.build.targets.sdist]
-include = [
-    "/src",
-    "/tests",
-    "/pyproject.toml",
-    "/README.md",
-    "/CHANGELOG.md",
-    "/CODE_OF_CONDUCT.md",
-    "/CONTRIBUTING.md",
-    "/SECURITY.md",
-    "/LICENSE",
-    "/NOTICE",
-    "/llms.txt",
+[tool.uv.build-backend]
+# The module, pyproject.toml, README and license files are included in the sdist by default.
+source-include = [
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "llms.txt",
+    "tests/**",
 ]
 
 # Run tasks with: uv run poe <task>
