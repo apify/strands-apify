@@ -8,26 +8,25 @@ Thank you for your interest in contributing!
 git clone https://github.com/apify/strands-apify.git
 cd strands-apify
 
-# Create a virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-pip install -e ".[dev]"
+uv run poe install-dev
 ```
+
+The project uses [uv](https://docs.astral.sh/uv/) for dependencies and [Poe the Poet](https://poethepoet.natn.io/) for
+tasks. Run `uv run poe` to list the tasks.
 
 ## Running checks
 
 ```bash
-hatch run prepare  # Runs format, lint, typecheck, and tests
+uv run poe check-code  # Runs lint, type check, and unit tests
 ```
 
 Or run individually:
 
 ```bash
-hatch run format     # ruff format
-hatch run lint       # ruff check
-hatch run typecheck  # mypy
-hatch run test       # pytest
+uv run poe format      # Fix lint issues and format code
+uv run poe lint        # ruff format --check and ruff check
+uv run poe type-check  # mypy
+uv run poe unit-tests  # pytest
 ```
 
 ## Submitting changes
@@ -35,7 +34,7 @@ hatch run test       # pytest
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Run `hatch run prepare` and ensure all checks pass
+4. Run `uv run poe check-code` and ensure all checks pass
 5. Submit a pull request
 
 ## Adding a new Apify tool

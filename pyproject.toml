@@ -37,13 +37,14 @@ dependencies = [
 "Issue Tracker" = "https://github.com/apify/strands-apify/issues"
 "Changelog" = "https://github.com/apify/strands-apify/blob/main/CHANGELOG.md"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
+    "poethepoet<1.0.0",
     "pytest>=8.0.0,<9.0.0",
     "pytest-asyncio>=0.25.0,<1.0.0",
+    "pytest-cov<8.0.0",
     "ruff>=0.11.0,<1.0.0",
     "mypy>=1.15.0,<2.0.0",
-    "hatch",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -66,21 +67,23 @@ include = [
     "/llms.txt",
 ]
 
-[tool.hatch.envs.default]
-dependencies = [
-    "pytest>=8.0.0,<9.0.0",
-    "pytest-asyncio>=0.25.0,<1.0.0",
-    "ruff>=0.11.0,<1.0.0",
-    "mypy>=1.15.0,<2.0.0",
-]
+# Run tasks with: uv run poe <task>
+[tool.poe.tasks]
+clean = { cmd = "rm -rf .coverage .mypy_cache .pytest_cache .ruff_cache build dist htmlcov", help = "Remove build artifacts and clean caches" }
+install-dev = { cmd = "uv sync", help = "Install development dependencies" }
+build = { cmd = "uv build", help = "Build the package" }
+type-check = { cmd = "uv run mypy src", help = "Run the type checker" }
+unit-tests = { cmd = "uv run pytest tests", help = "Run unit tests" }
+unit-tests-cov = { cmd = "uv run pytest --cov=strands_apify --cov-report=xml:coverage-unit.xml tests", help = "Run unit tests with an XML coverage report" }
+check-code = { sequence = ["lint", "type-check", "unit-tests"], help = "Run all checks and unit tests" }
 
-[tool.hatch.envs.default.scripts]
-test = "pytest {args}"
-lint = "ruff check src tests"
-format = "ruff format --check src tests"
-format-fix = "ruff format src tests"
-typecheck = "mypy src"
-prepare = ["format", "lint", "typecheck", "test"]
+[tool.poe.tasks.lint]
+shell = "uv run ruff format --check && uv run ruff check"
+help = "Run the linter and check formatting"
+
+[tool.poe.tasks.format]
+shell = "uv run ruff check --fix && uv run ruff format"
+help = "Fix lint issues and format code"
 
 [tool.ruff]
 line-length = 120
