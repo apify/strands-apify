@@ -45,6 +45,7 @@ dev = [
     "pytest-cov<8.0.0",
     "ruff~=0.17.0",
     "ty~=0.0.0",
+    "typos<2.0.0",
 ]
 
 [tool.uv.build-backend]
@@ -64,9 +65,10 @@ clean = { cmd = "rm -rf .coverage .pytest_cache .ruff_cache .ty_cache build dist
 install-dev = { cmd = "uv sync", help = "Install development dependencies" }
 build = { cmd = "uv build", help = "Build the package" }
 type-check = { cmd = "uv run ty check", help = "Run the type checker" }
+spell-check = { cmd = "uv run typos", help = "Check spelling" }
 unit-tests = { cmd = "uv run pytest tests", help = "Run unit tests" }
 unit-tests-cov = { cmd = "uv run pytest --cov=strands_apify --cov-report=xml:coverage-unit.xml tests", help = "Run unit tests with an XML coverage report" }
-check-code = { sequence = ["lint", "type-check", "unit-tests"], help = "Run all checks and unit tests" }
+check-code = { sequence = ["lint", "type-check", "spell-check", "unit-tests"], help = "Run all checks and unit tests" }
 
 [tool.poe.tasks.lint]
 shell = "uv run ruff format --check && uv run ruff check"
@@ -159,3 +161,12 @@ addopts = "--strict-markers --strict-config --durations=5"
 testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
+
+[tool.uv]
+# Minimal defense against supply-chain attacks.
+exclude-newer = "24 hours"
+
+[tool.uv.exclude-newer-package]
+# Allow internal Apify packages to install immediately.
+apify-client = false
+impit = false
