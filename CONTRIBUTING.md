@@ -12,7 +12,8 @@ uv run poe install-dev
 ```
 
 The project uses [uv](https://docs.astral.sh/uv/) for dependencies and [Poe the Poet](https://poethepoet.natn.io/) for
-tasks. Run `uv run poe` to list the tasks.
+tasks. Run `uv run poe` to list the tasks. Use uv 0.10 or newer (`uv self update`); older versions such as 0.9.0 can't
+parse `pyproject.toml`.
 
 ## Running checks
 
