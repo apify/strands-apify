@@ -43,7 +43,7 @@ dev = [
     "pytest>=8.0.0,<9.0.0",
     "pytest-asyncio>=0.25.0,<1.0.0",
     "pytest-cov<8.0.0",
-    "ruff>=0.11.0,<1.0.0",
+    "ruff~=0.17.0",
     "mypy>=1.15.0,<2.0.0",
 ]
 
@@ -78,22 +78,72 @@ help = "Fix lint issues and format code"
 
 [tool.ruff]
 line-length = 120
-include = ["src/**/*.py", "tests/**/*.py"]
+include = ["**/*.py", "**/*.md"]
 
 [tool.ruff.lint]
-select = [
-    "E",     # pycodestyle errors
-    "F",     # pyflakes
-    "I",     # isort
-    "B",     # bugbear
-    "UP",    # pyupgrade (Python 3.11+ idioms — auto-fixes Dict→dict, Optional→| None, etc.)
-    "SIM",   # simplifications
-    "C4",    # comprehensions
-    "PIE",   # misc
-    "PT",    # pytest style
-    "TCH",   # move runtime-only imports under TYPE_CHECKING
-    "RUF",   # ruff-specific
+select = ["ALL"]
+ignore = [
+    "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed in {filename}
+    "BLE001",  # Do not catch blind exception
+    "C901",    # `{name}` is too complex
+    "COM812",  # This rule may cause conflicts when used with the formatter
+    "CPY001",  # Missing copyright notice at top of file
+    "D100",    # Missing docstring in public module
+    "D104",    # Missing docstring in public package
+    "D107",    # Missing docstring in `__init__`
+    "EM",      # flake8-errmsg
+    "FIX",     # flake8-fixme
+    "G004",    # Logging statement uses f-string
+    "ISC001",  # This rule may cause conflicts when used with the formatter
+    "PLR0911", # Too many return statements
+    "PLR0913", # Too many arguments in function definition
+    "PLR0915", # Too many statements
+    "PTH",     # flake8-use-pathlib
+    "TD002",   # Missing author in TODO; try: `# TODO(<author_name>): ...` or `# TODO @<author_name>: ...
+    "TRY003",  # Avoid specifying long messages outside the exception class
 ]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = [
+    "F401", # Unused imports
+]
+"src/strands_apify/{core,search_crawling,social_media}.py" = [
+    "TRY301", # Tools validate inside the `try`, so every failure reaches the one `_error_result` handler
+]
+"**/{tests}/*" = [
+    "D",       # Everything from the pydocstyle
+    "INP001",  # File {filename} is part of an implicit namespace package, add an __init__.py
+    "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
+    "S101",    # Use of assert detected
+    "S105",    # Possible hardcoded password assigned to: "{name}"
+    "S106",    # Possible hardcoded password assigned to argument: "{name}"
+    "SLF001",  # Private member accessed: `{name}`
+    "T20",     # flake8-print
+    "TRY301",  # Abstract `raise` to an inner function
+    "TID252",  # Prefer absolute imports over relative imports from parent modules
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "single"
+
+[tool.ruff.lint.flake8-type-checking]
+# Strands builds the tool spec from the annotations at runtime, so their imports can't move into a TYPE_CHECKING block.
+runtime-evaluated-decorators = ["strands.tool"]
+
+[tool.ruff.lint.pylint]
+max-branches = 18
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+mark-parentheses = false
 
 [tool.mypy]
 python_version = "3.11"

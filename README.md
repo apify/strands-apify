@@ -32,7 +32,7 @@ from strands import Agent
 from strands_apify import APIFY_CORE_TOOLS
 
 agent = Agent(tools=APIFY_CORE_TOOLS)
-result = agent("Scrape https://example.com and summarize it.")
+result = agent('Scrape https://example.com and summarize it.')
 ```
 
 Or register specific tools:
@@ -71,12 +71,12 @@ Generic Apify platform access - run any Actor, run saved tasks, fetch dataset it
 from strands_apify import apify_web_fetch, apify_run_actor_and_get_dataset
 
 # Single URL
-apify_web_fetch(url="https://example.com", formats=["markdown", "links"])
+apify_web_fetch(url='https://example.com', formats=['markdown', 'links'])
 
 # Any Actor with custom input
 apify_run_actor_and_get_dataset(
-    actor_id="apify/website-content-crawler",
-    run_input={"startUrls": [{"url": "https://docs.example.com"}], "maxCrawlPages": 5},
+    actor_id='apify/website-content-crawler',
+    run_input={'startUrls': [{'url': 'https://docs.example.com'}], 'maxCrawlPages': 5},
 )
 ```
 
@@ -97,12 +97,12 @@ Scrape structured data from popular social platforms.
 ```python
 from strands_apify import apify_twitter_scraper, apify_linkedin_profile_search
 
-apify_twitter_scraper(search_query="from:NASA min_faves:100", results_limit=30)
+apify_twitter_scraper(search_query='from:NASA min_faves:100', results_limit=30)
 
 apify_linkedin_profile_search(
-    search_query="software engineer",
-    locations=["San Francisco"],
-    profile_scraper_mode="Full",
+    search_query='software engineer',
+    locations=['San Francisco'],
+    profile_scraper_mode='Full',
 )
 ```
 
@@ -121,10 +121,10 @@ Search engines, maps, video, multi-page crawls, and e-commerce.
 ```python
 from strands_apify import apify_google_search_scraper, apify_website_content_crawler
 
-apify_google_search_scraper(search_query="best AI frameworks 2025", country_code="us")
+apify_google_search_scraper(search_query='best AI frameworks 2025', country_code='us')
 
 apify_website_content_crawler(
-    start_url="https://docs.example.com",
+    start_url='https://docs.example.com',
     max_pages=20,
     max_depth=3,
 )
