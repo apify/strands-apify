@@ -82,6 +82,7 @@ def default_ceilings(monkeypatch: pytest.MonkeyPatch) -> None:
         'STRANDS_APIFY_MAX_MEMORY_MBYTES',
         'STRANDS_APIFY_MAX_ITEMS',
         'STRANDS_APIFY_MAX_CRAWL_DEPTH',
+        'STRANDS_APIFY_MAX_TOTAL_CHARGE_USD',
     ):
         monkeypatch.delenv(env_var, raising=False)
 

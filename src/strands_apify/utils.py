@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 from typing import TYPE_CHECKING, Any, Literal, get_args
 from urllib.parse import urlparse
 
@@ -157,6 +158,29 @@ def _ceiling(env_var: str, default: int) -> int:
     return value
 
 
+def _charge_limit() -> Decimal | None:
+    """Return the charge limit in USD for each run from `STRANDS_APIFY_MAX_TOTAL_CHARGE_USD`, or `None` when unset.
+
+    An invalid value raises instead of being ignored, because ignoring it would silently remove the cap.
+    """
+    raw = os.getenv('STRANDS_APIFY_MAX_TOTAL_CHARGE_USD', '')
+    if not raw:
+        return None
+    try:
+        value = Decimal(raw)
+    except InvalidOperation:
+        value = Decimal(0)
+    if not value.is_finite() or value <= 0:
+        raise ValueError(f'STRANDS_APIFY_MAX_TOTAL_CHARGE_USD must be a positive number of USD, got {raw!r}.')
+    return value
+
+
+def _with_charge_limit(call_kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Add the developer's charge limit, if set, to the keyword arguments of an Actor or task `.call()`."""
+    limit = _charge_limit()
+    return call_kwargs if limit is None else {**call_kwargs, 'max_total_charge_usd': limit}
+
+
 # The clamps only cap the upper end. Zero and negative values pass through, so the validators reject them.
 def _clamp_timeout(value: int) -> int:
     return min(value, _ceiling('STRANDS_APIFY_MAX_TIMEOUT_SECS', MAX_TIMEOUT_SECS))
@@ -281,7 +305,7 @@ class ApifyToolClient:
         if build is not None:
             call_kwargs['build'] = build
 
-        actor_run = self.client.actor(actor_id).call(**call_kwargs)
+        actor_run = self.client.actor(actor_id).call(**_with_charge_limit(call_kwargs))
         if actor_run is None:
             raise RuntimeError(f'Actor {actor_id} returned no run data (possible wait timeout).')
         _check_run_status(actor_run, f'Actor {actor_id}')
@@ -355,11 +379,12 @@ class ApifyToolClient:
             'maxCrawlPages': 1,
             'crawlerType': crawler_type,
         }
-        actor_run = self.client.actor(WEBSITE_CONTENT_CRAWLER).call(
-            run_input=run_input,
-            run_timeout=timedelta(seconds=timeout_secs),
-            logger=None,
-        )
+        call_kwargs: dict[str, Any] = {
+            'run_input': run_input,
+            'run_timeout': timedelta(seconds=timeout_secs),
+            'logger': None,
+        }
+        actor_run = self.client.actor(WEBSITE_CONTENT_CRAWLER).call(**_with_charge_limit(call_kwargs))
         if actor_run is None:
             raise RuntimeError('Website Content Crawler returned no run data (possible wait timeout).')
         _check_run_status(actor_run, 'Website Content Crawler')
@@ -454,7 +479,7 @@ class ApifyToolClient:
         if memory_mbytes is not None:
             call_kwargs['memory_mbytes'] = memory_mbytes
 
-        task_run = self.client.task(task_id).call(**call_kwargs)
+        task_run = self.client.task(task_id).call(**_with_charge_limit(call_kwargs))
         if task_run is None:
             raise RuntimeError(f'Task {task_id} returned no run data (possible wait timeout).')
         _check_run_status(task_run, f'Task {task_id}')

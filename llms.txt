@@ -139,6 +139,9 @@ never raise out, so the agent's reasoning loop is not interrupted.
 - Raise or lower a ceiling with `STRANDS_APIFY_MAX_TIMEOUT_SECS`, `STRANDS_APIFY_MAX_ITEMS`,
   `STRANDS_APIFY_MAX_CRAWL_DEPTH` or `STRANDS_APIFY_MAX_MEMORY_MBYTES` (memory can only
   be lowered). A capped `timeout_secs` stops the Actor run, so raise it for long crawls.
+- Set `STRANDS_APIFY_MAX_TOTAL_CHARGE_USD` (e.g. `0.50`) to cap what each Actor or task
+  run may cost. It is unset by default, the agent can't change it, and an invalid value
+  makes the tools return an error. `apify_web_fetch` doesn't start a run, so it isn't capped.
 - The package sends `x-apify-integration-platform: strands-agents` on every API
   request for attribution.
 

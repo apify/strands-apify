@@ -140,6 +140,7 @@ apify_website_content_crawler(
 | `STRANDS_APIFY_MAX_ITEMS` | Ceiling for `limit`, `dataset_items_limit`, `results_limit`, `search_limit`, `max_reviews` and `max_pages`. Default `1000`. LinkedIn profile posts stays at its own `100` unless this is set lower. | No |
 | `STRANDS_APIFY_MAX_CRAWL_DEPTH` | Ceiling for `max_depth`. Default `5`. | No |
 | `STRANDS_APIFY_MAX_MEMORY_MBYTES` | Ceiling for `memory_mbytes`. Default and maximum `32768`; it can only be lowered. | No |
+| `STRANDS_APIFY_MAX_TOTAL_CHARGE_USD` | Maximum cost in USD of each Actor or task run, e.g. `0.50`. Unset by default (no limit). | No |
 
 ### Limits on agent-supplied values
 
@@ -152,6 +153,19 @@ at least 128, even when the memory ceiling is set lower. Each tool description t
 `timeout_secs` is the Actor run's own time limit, so a capped run is stopped after 600 seconds. Raise
 `STRANDS_APIFY_MAX_TIMEOUT_SECS` for long crawls. To page through more than 1000 dataset items, call
 `apify_get_dataset_items` with `offset`.
+
+### Cost limit
+
+Some Actors charge per result or per event, and an agent decides which Actors to run and with what input. Set
+`STRANDS_APIFY_MAX_TOTAL_CHARGE_USD` to cap what each run may cost:
+
+```bash
+export STRANDS_APIFY_MAX_TOTAL_CHARGE_USD=0.50
+```
+
+Every tool that starts an Actor or task run passes the limit to Apify, and the platform stops charging the run when it
+reaches it. The agent can't change it. A value that isn't a positive number makes the tools return an error instead of
+running without the limit. `apify_web_fetch` doesn't start a run, so the limit doesn't apply to it.
 
 ## Contributing
 
