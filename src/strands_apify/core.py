@@ -23,6 +23,8 @@ from .utils import (
     DEFAULT_SCRAPE_TIMEOUT_SECS,
     DEFAULT_TIMEOUT_SECS,
     DEFAULT_WEB_FETCH_TIMEOUT_SECS,
+    WEB_FETCH_ACTOR,
+    WEBSITE_CONTENT_CRAWLER,
     ApifyToolClient,
     CrawlerType,
     WebFetchFormat,
@@ -119,6 +121,7 @@ def apify_get_dataset_items(
         items = client.get_dataset_items(dataset_id=dataset_id, limit=limit, offset=offset)
         return _success_result(
             text=json.dumps(items, indent=2, default=str),
+            untrusted_source=f'apify:dataset/{dataset_id}',
             panel_body=(
                 f'[green]Dataset items retrieved[/green]\nDataset ID: {dataset_id}\nItems returned: {len(items)}'
             ),
@@ -176,6 +179,7 @@ def apify_run_actor_and_get_dataset(  # noqa: PLR0917
         )
         return _success_result(
             text=json.dumps(result, indent=2, default=str),
+            untrusted_source=f'apify:{actor_id}',
             panel_body=(
                 f'[green]Actor run completed with dataset[/green]\n'
                 f'Actor: {actor_id}\n'
@@ -283,6 +287,7 @@ def apify_run_task_and_get_dataset(  # noqa: PLR0917
         )
         return _success_result(
             text=json.dumps(result, indent=2, default=str),
+            untrusted_source=f'apify:task/{task_id}',
             panel_body=(
                 f'[green]Task run completed with dataset[/green]\n'
                 f'Task: {task_id}\n'
@@ -335,6 +340,7 @@ def apify_web_fetch(
         result = client.web_fetch(url=url, formats=formats, headers=headers, wait_ms=wait_ms, timeout_secs=timeout_secs)
         return _success_result(
             text=json.dumps(result, indent=2, default=str),
+            untrusted_source=f'apify:{WEB_FETCH_ACTOR}',
             panel_body=(
                 f'[green]URL fetched[/green]\n'
                 f'URL: {escape(str(result["final_url"]))}\n'
@@ -377,6 +383,7 @@ def apify_scrape_url(
         content = client.scrape_url(url=url, timeout_secs=timeout_secs, crawler_type=crawler_type)
         return _success_result(
             text=content,
+            untrusted_source=f'apify:{WEBSITE_CONTENT_CRAWLER}',
             panel_body=(
                 f'[green]URL scraped successfully[/green]\nURL: {url}\nContent length: {len(content)} characters'
             ),

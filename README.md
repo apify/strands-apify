@@ -140,6 +140,8 @@ apify_website_content_crawler(
 | `STRANDS_APIFY_MAX_ITEMS` | Ceiling for `limit`, `dataset_items_limit`, `results_limit`, `search_limit`, `max_reviews` and `max_pages`. Default `1000`. LinkedIn profile posts stays at its own `100` unless this is set lower. | No |
 | `STRANDS_APIFY_MAX_CRAWL_DEPTH` | Ceiling for `max_depth`. Default `5`. | No |
 | `STRANDS_APIFY_MAX_MEMORY_MBYTES` | Ceiling for `memory_mbytes`. Default and maximum `32768`; it can only be lowered. | No |
+| `STRANDS_APIFY_MAX_TOTAL_CHARGE_USD` | Maximum cost in USD of each Actor or task run, e.g. `0.50`. Unset by default (no limit). | No |
+| `STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED` | Set to `0` to return third-party content without the untrusted content markers. On by default. | No |
 
 ### Limits on agent-supplied values
 
@@ -152,6 +154,38 @@ at least 128, even when the memory ceiling is set lower. Each tool description t
 `timeout_secs` is the Actor run's own time limit, so a capped run is stopped after 600 seconds. Raise
 `STRANDS_APIFY_MAX_TIMEOUT_SECS` for long crawls. To page through more than 1000 dataset items, call
 `apify_get_dataset_items` with `offset`.
+
+### Cost limit
+
+Some Actors charge per result or per event, and an agent decides which Actors to run and with what input. Set
+`STRANDS_APIFY_MAX_TOTAL_CHARGE_USD` to cap what each run may cost:
+
+```bash
+export STRANDS_APIFY_MAX_TOTAL_CHARGE_USD=0.50
+```
+
+Every tool that starts an Actor or task run passes the limit to Apify, and the platform stops charging the run when it
+reaches it. The agent can't change it. A value that isn't a positive number makes the tools return an error instead of
+running without the limit. `apify_web_fetch` doesn't start a run, so the limit doesn't apply to it.
+
+Some Actors require a higher limit. `apify/e-commerce-scraping-tool`, for example, needs at least $1.00, and runs below
+an Actor's minimum fail with "Maximum cost per run is less than the allowed minimum".
+
+### Untrusted output
+
+Scraped pages and other third-party content can carry prompt injections. Tools that return such content wrap it in
+markers that tell the agent to treat it as data, never as instructions, and name where it came from:
+
+```text
+<<<EXTERNAL_UNTRUSTED_CONTENT>>>
+Source: apify:apify/google-search-scraper
+{ ...JSON payload... }
+<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>
+```
+
+Markers found inside the content are replaced with `[marker removed]`, so the content can't close the wrapper early.
+`apify_run_actor` and `apify_run_task` return only the platform's run metadata and aren't wrapped. Set
+`STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED=0` if you process the tool output as plain JSON yourself.
 
 ## Contributing
 

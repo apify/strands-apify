@@ -90,6 +90,7 @@ def _social_media_result(
     )
     return _success_result(
         text=json.dumps(result, indent=2, default=str),
+        untrusted_source=f'apify:{actor_id}',
         panel_body=(
             f'[green]{actor_name} completed[/green]\n'
             f'Actor: {actor_id}\n'

@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 from typing import TYPE_CHECKING, Any, Literal, get_args
 from urllib.parse import urlparse
 
@@ -25,6 +26,11 @@ logger = logging.getLogger(__name__)
 # to suppress panels even in interactive shells.
 console = Console(stderr=True)
 _QUIET_ENV_VALUES = frozenset({'1', 'true', 'yes', 'on'})
+_OFF_ENV_VALUES = frozenset({'0', 'false', 'no', 'off'})
+
+# The markers around tool output that the LLM must treat as untrusted data, never as instructions.
+UNTRUSTED_CONTENT_START = '<<<EXTERNAL_UNTRUSTED_CONTENT>>>'
+UNTRUSTED_CONTENT_END = '<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>'
 
 
 def _panels_enabled() -> bool:
@@ -66,6 +72,7 @@ WEBSITE_CONTENT_CRAWLER = 'apify/website-content-crawler'
 CrawlerType = Literal['playwright:adaptive', 'playwright:firefox', 'cheerio']
 WEBSITE_CONTENT_CRAWLER_TYPES = get_args(CrawlerType)
 
+WEB_FETCH_ACTOR = 'apify/web-fetch'
 WEB_FETCH_URL = 'https://web-fetch.apify.actor/'
 WebFetchFormat = Literal['markdown', 'html', 'text', 'links', 'raw']
 DEFAULT_WEB_FETCH_TIMEOUT_SECS = 180
@@ -115,10 +122,31 @@ def _error_result(e: Exception, tool_name: str) -> dict[str, Any]:
     return {'status': 'error', 'content': [{'text': message}]}
 
 
-def _success_result(text: str, panel_body: str, panel_title: str) -> dict[str, Any]:
-    """Build a structured success response and display a success panel."""
+def _marking_enabled() -> bool:
+    """Return False only when `STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED` turns the untrusted content markers off."""
+    return os.getenv('STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED', '').lower() not in _OFF_ENV_VALUES
+
+
+def _mark_untrusted(text: str, source: str) -> str:
+    """Wrap third-party content in markers that tell the LLM to treat it as data, never as instructions."""
+    # Scraped text could contain the markers and close the wrapper early.
+    for marker in (UNTRUSTED_CONTENT_START, UNTRUSTED_CONTENT_END):
+        text = text.replace(marker, '[marker removed]')
+    return f'{UNTRUSTED_CONTENT_START}\nSource: {source}\n{text}\n{UNTRUSTED_CONTENT_END}'
+
+
+def _success_result(
+    text: str, panel_body: str, panel_title: str, *, untrusted_source: str | None = None
+) -> dict[str, Any]:
+    """Build a structured success response and display a success panel.
+
+    Pass `untrusted_source` when `text` is third-party content, such as scraped pages or dataset items. The text is then
+    wrapped in untrusted content markers naming that source, unless marking is turned off.
+    """
     if _panels_enabled():
         console.print(Panel(panel_body, title=f'[bold cyan]{panel_title}[/bold cyan]', border_style='green'))
+    if untrusted_source is not None and _marking_enabled():
+        text = _mark_untrusted(text, untrusted_source)
     return {'status': 'success', 'content': [{'text': text}]}
 
 
@@ -155,6 +183,29 @@ def _ceiling(env_var: str, default: int) -> int:
         logger.warning('Ignoring %s=%r, expected a positive integer. Using %d.', env_var, raw, default)
         return default
     return value
+
+
+def _charge_limit() -> Decimal | None:
+    """Return the charge limit in USD for each run from `STRANDS_APIFY_MAX_TOTAL_CHARGE_USD`, or `None` when unset.
+
+    An invalid value raises instead of being ignored, because ignoring it would silently remove the cap.
+    """
+    raw = os.getenv('STRANDS_APIFY_MAX_TOTAL_CHARGE_USD', '')
+    if not raw:
+        return None
+    try:
+        value = Decimal(raw)
+    except InvalidOperation:
+        value = Decimal(0)
+    if not value.is_finite() or value <= 0:
+        raise ValueError(f'STRANDS_APIFY_MAX_TOTAL_CHARGE_USD must be a positive number of USD, got {raw!r}.')
+    return value
+
+
+def _with_charge_limit(call_kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Add the developer's charge limit, if set, to the keyword arguments of an Actor or task `.call()`."""
+    limit = _charge_limit()
+    return call_kwargs if limit is None else {**call_kwargs, 'max_total_charge_usd': limit}
 
 
 # The clamps only cap the upper end. Zero and negative values pass through, so the validators reject them.
@@ -281,7 +332,7 @@ class ApifyToolClient:
         if build is not None:
             call_kwargs['build'] = build
 
-        actor_run = self.client.actor(actor_id).call(**call_kwargs)
+        actor_run = self.client.actor(actor_id).call(**_with_charge_limit(call_kwargs))
         if actor_run is None:
             raise RuntimeError(f'Actor {actor_id} returned no run data (possible wait timeout).')
         _check_run_status(actor_run, f'Actor {actor_id}')
@@ -355,11 +406,12 @@ class ApifyToolClient:
             'maxCrawlPages': 1,
             'crawlerType': crawler_type,
         }
-        actor_run = self.client.actor(WEBSITE_CONTENT_CRAWLER).call(
-            run_input=run_input,
-            run_timeout=timedelta(seconds=timeout_secs),
-            logger=None,
-        )
+        call_kwargs: dict[str, Any] = {
+            'run_input': run_input,
+            'run_timeout': timedelta(seconds=timeout_secs),
+            'logger': None,
+        }
+        actor_run = self.client.actor(WEBSITE_CONTENT_CRAWLER).call(**_with_charge_limit(call_kwargs))
         if actor_run is None:
             raise RuntimeError('Website Content Crawler returned no run data (possible wait timeout).')
         _check_run_status(actor_run, 'Website Content Crawler')
@@ -454,7 +506,7 @@ class ApifyToolClient:
         if memory_mbytes is not None:
             call_kwargs['memory_mbytes'] = memory_mbytes
 
-        task_run = self.client.task(task_id).call(**call_kwargs)
+        task_run = self.client.task(task_id).call(**_with_charge_limit(call_kwargs))
         if task_run is None:
             raise RuntimeError(f'Task {task_id} returned no run data (possible wait timeout).')
         _check_run_status(task_run, f'Task {task_id}')

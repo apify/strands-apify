@@ -23,10 +23,20 @@ pytestmark = pytest.mark.skipif(not os.environ.get('APIFY_TOKEN'), reason='APIFY
 HELLO_WORLD = 'apify/hello-world'
 
 
+START = '<<<EXTERNAL_UNTRUSTED_CONTENT>>>\n'
+END = '\n<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>'
+
+
 def _payload(result: dict[str, Any]) -> Any:
-    """Return the tool's JSON payload, failing with the tool's error message if the call did not succeed."""
+    """Return the tool's JSON payload, failing with the tool's error message if the call did not succeed.
+
+    Third-party content comes wrapped in untrusted content markers, so those are checked and removed first.
+    """
     text = result['content'][0]['text']
     assert result['status'] == 'success', text
+    if text.startswith(START):
+        assert text.endswith(END), text[-200:]
+        text = text[len(START) : -len(END)].split('\n', 1)[1]
     return json.loads(text)
 
 
