@@ -87,6 +87,12 @@ def default_ceilings(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(env_var, raising=False)
 
 
+@pytest.fixture(autouse=True)
+def plain_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Turn off the untrusted content markers, so tests can parse the JSON. `test_untrusted_output.py` covers them."""
+    monkeypatch.setenv('STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED', '0')
+
+
 @pytest.fixture
 def mock_apify_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Set required Apify environment variables."""

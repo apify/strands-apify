@@ -26,6 +26,11 @@ logger = logging.getLogger(__name__)
 # to suppress panels even in interactive shells.
 console = Console(stderr=True)
 _QUIET_ENV_VALUES = frozenset({'1', 'true', 'yes', 'on'})
+_OFF_ENV_VALUES = frozenset({'0', 'false', 'no', 'off'})
+
+# The markers around tool output that the LLM must treat as untrusted data, never as instructions.
+UNTRUSTED_CONTENT_START = '<<<EXTERNAL_UNTRUSTED_CONTENT>>>'
+UNTRUSTED_CONTENT_END = '<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>'
 
 
 def _panels_enabled() -> bool:
@@ -67,6 +72,7 @@ WEBSITE_CONTENT_CRAWLER = 'apify/website-content-crawler'
 CrawlerType = Literal['playwright:adaptive', 'playwright:firefox', 'cheerio']
 WEBSITE_CONTENT_CRAWLER_TYPES = get_args(CrawlerType)
 
+WEB_FETCH_ACTOR = 'apify/web-fetch'
 WEB_FETCH_URL = 'https://web-fetch.apify.actor/'
 WebFetchFormat = Literal['markdown', 'html', 'text', 'links', 'raw']
 DEFAULT_WEB_FETCH_TIMEOUT_SECS = 180
@@ -116,10 +122,31 @@ def _error_result(e: Exception, tool_name: str) -> dict[str, Any]:
     return {'status': 'error', 'content': [{'text': message}]}
 
 
-def _success_result(text: str, panel_body: str, panel_title: str) -> dict[str, Any]:
-    """Build a structured success response and display a success panel."""
+def _marking_enabled() -> bool:
+    """Return False only when `STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED` turns the untrusted content markers off."""
+    return os.getenv('STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED', '').lower() not in _OFF_ENV_VALUES
+
+
+def _mark_untrusted(text: str, source: str) -> str:
+    """Wrap third-party content in markers that tell the LLM to treat it as data, never as instructions."""
+    # Scraped text could contain the markers and close the wrapper early.
+    for marker in (UNTRUSTED_CONTENT_START, UNTRUSTED_CONTENT_END):
+        text = text.replace(marker, '[marker removed]')
+    return f'{UNTRUSTED_CONTENT_START}\nSource: {source}\n{text}\n{UNTRUSTED_CONTENT_END}'
+
+
+def _success_result(
+    text: str, panel_body: str, panel_title: str, *, untrusted_source: str | None = None
+) -> dict[str, Any]:
+    """Build a structured success response and display a success panel.
+
+    Pass `untrusted_source` when `text` is third-party content, such as scraped pages or dataset items. The text is then
+    wrapped in untrusted content markers naming that source, unless marking is turned off.
+    """
     if _panels_enabled():
         console.print(Panel(panel_body, title=f'[bold cyan]{panel_title}[/bold cyan]', border_style='green'))
+    if untrusted_source is not None and _marking_enabled():
+        text = _mark_untrusted(text, untrusted_source)
     return {'status': 'success', 'content': [{'text': text}]}
 
 

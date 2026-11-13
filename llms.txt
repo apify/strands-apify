@@ -124,6 +124,21 @@ Every tool returns a dict matching the Strands `ToolResult` convention:
 Errors are caught inside the tool and converted to `{"status": "error", ...}` - they
 never raise out, so the agent's reasoning loop is not interrupted.
 
+Tools that return third-party content (dataset items, scraped pages, search and social
+media results) wrap the text in untrusted content markers, so the agent treats it as
+data and not as instructions. `apify_run_actor` and `apify_run_task` return only run
+metadata and are not wrapped:
+
+```text
+<<<EXTERNAL_UNTRUSTED_CONTENT>>>
+Source: apify:apify/google-search-scraper
+{ ...JSON payload... }
+<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>
+```
+
+Markers found inside the content are replaced with `[marker removed]`. Set
+`STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED=0` to get the plain payload.
+
 ## Usage notes
 
 - `APIFY_ALL_TOOLS` exists for convenience but registering 18 tools at once can

@@ -23,6 +23,8 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tasks, PR conventions and rel
   states its ceiling as `(clamped to N max by default)`, which `tests/unit/test_clamp_descriptions.py` checks.
 - Settings the LLM must not change, like the charge limit (`STRANDS_APIFY_MAX_TOTAL_CHARGE_USD`), are environment
   variables read by `utils.py`, never tool parameters. Every Actor and task `.call()` goes through `_with_charge_limit`.
+- A tool that returns third-party content passes `untrusted_source='apify:<actor, task or dataset>'` to
+  `_success_result`, which wraps the text in untrusted content markers unless `STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED=0`.
 - API access goes through `ApifyToolClient`. It reads `APIFY_TOKEN` and sends the
   `x-apify-integration-platform: strands-agents` tracking header. Keep both.
 - Apify Console links to the API token page (`console.apify.com/settings/integrations`) carry

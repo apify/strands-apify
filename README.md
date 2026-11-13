@@ -141,6 +141,7 @@ apify_website_content_crawler(
 | `STRANDS_APIFY_MAX_CRAWL_DEPTH` | Ceiling for `max_depth`. Default `5`. | No |
 | `STRANDS_APIFY_MAX_MEMORY_MBYTES` | Ceiling for `memory_mbytes`. Default and maximum `32768`; it can only be lowered. | No |
 | `STRANDS_APIFY_MAX_TOTAL_CHARGE_USD` | Maximum cost in USD of each Actor or task run, e.g. `0.50`. Unset by default (no limit). | No |
+| `STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED` | Set to `0` to return third-party content without the untrusted content markers. On by default. | No |
 
 ### Limits on agent-supplied values
 
@@ -166,6 +167,22 @@ export STRANDS_APIFY_MAX_TOTAL_CHARGE_USD=0.50
 Every tool that starts an Actor or task run passes the limit to Apify, and the platform stops charging the run when it
 reaches it. The agent can't change it. A value that isn't a positive number makes the tools return an error instead of
 running without the limit. `apify_web_fetch` doesn't start a run, so the limit doesn't apply to it.
+
+### Untrusted output
+
+Scraped pages and other third-party content can carry prompt injections. Tools that return such content wrap it in
+markers that tell the agent to treat it as data, never as instructions, and name where it came from:
+
+```text
+<<<EXTERNAL_UNTRUSTED_CONTENT>>>
+Source: apify:apify/google-search-scraper
+{ ...JSON payload... }
+<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>
+```
+
+Markers found inside the content are replaced with `[marker removed]`, so the content can't close the wrapper early.
+`apify_run_actor` and `apify_run_task` return only the platform's run metadata and aren't wrapped. Set
+`STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED=0` if you process the tool output as plain JSON yourself.
 
 ## Contributing
 
