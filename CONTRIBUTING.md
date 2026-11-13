@@ -8,26 +8,34 @@ Thank you for your interest in contributing!
 git clone https://github.com/apify/strands-apify.git
 cd strands-apify
 
-# Create a virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-pip install -e ".[dev]"
+uv run poe install-dev
 ```
+
+The project uses [uv](https://docs.astral.sh/uv/) for dependencies and [Poe the Poet](https://poethepoet.natn.io/) for
+tasks. Run `uv run poe` to list the tasks. Use uv 0.10 or newer (`uv self update`); older versions such as 0.9.0 can't
+parse `pyproject.toml`.
 
 ## Running checks
 
 ```bash
-hatch run prepare  # Runs format, lint, typecheck, and tests
+uv run poe check-code  # Runs lint, type check, and unit tests
 ```
 
 Or run individually:
 
 ```bash
-hatch run format     # ruff format
-hatch run lint       # ruff check
-hatch run typecheck  # mypy
-hatch run test       # pytest
+uv run poe format      # Fix lint issues and format code
+uv run poe lint        # ruff format --check and ruff check
+uv run poe type-check  # ty
+uv run poe unit-tests  # pytest
+```
+
+CI also runs the integration tests in `tests/integration` against the Apify platform with its own token, on `main` and
+on pull requests from branches in this repository. Pull requests from forks skip them, because forks don't get the
+token. To run them yourself:
+
+```bash
+APIFY_TOKEN=... uv run poe integration-tests
 ```
 
 ## Submitting changes
@@ -35,7 +43,7 @@ hatch run test       # pytest
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Run `hatch run prepare` and ensure all checks pass
+4. Run `uv run poe check-code` and ensure all checks pass
 5. Submit a pull request
 
 ## Adding a new Apify tool
@@ -48,35 +56,33 @@ hatch run test       # pytest
 
 ## PR conventions
 
-PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/)
-(`feat:`, `fix:`, `docs:`, `chore:`, ...). The `check_pr_title` workflow enforces this,
-and the changelog is generated from these prefixes via [git-cliff](https://git-cliff.org/).
+PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/). The `pr_title_check` workflow
+enforces this, and [git-cliff](https://git-cliff.org/) generates the version bump and the changelog from these types:
+
+- `feat:` for a new feature
+- `fix:` for a bug fix
+- `perf:` for a performance improvement
+- `refactor:` or `style:` for a source change that doesn't change behavior
+- `test:`, `docs:`, `build:`, `chore:` or `ci:` for everything else
+
+A `feat`, `fix`, `perf`, `refactor` or `style` commit on `main` publishes a beta, so use those types for source changes
+only. Mark a breaking change with `!` after the type (`feat!:`) or a `BREAKING CHANGE:` footer. While the version is
+below 1.0, a breaking change bumps the minor version and a feature bumps the patch version.
 
 ## Releases
 
-### Stable releases
+- **Betas are automatic.** After a PR merges to `main`, `on_main.yaml` runs the checks and, for a `feat`, `fix`,
+  `perf`, `refactor` or `style` commit, dispatches
+  [`manual_release_beta.yaml`](https://github.com/apify/strands-apify/actions/workflows/manual_release_beta.yaml),
+  which publishes an `X.Y.ZbN` beta to [PyPI](https://pypi.org/project/strands-apify/). It can also be run by hand.
+- **Stable releases are manual.** A maintainer runs
+  [`manual_release_stable.yaml`](https://github.com/apify/strands-apify/actions/workflows/manual_release_stable.yaml)
+  from `main`. With `auto`, git-cliff picks the version from the commits since the last tag; `custom` takes an exact
+  version. The workflow bumps `pyproject.toml`, writes the changelog, tags the release, creates the GitHub release and
+  publishes to PyPI.
 
-1. Go to **Actions** > [**Create a release**](https://github.com/apify/strands-apify/actions/workflows/release.yml) > **Run workflow**.
-2. Pick a release type (`auto` recommended, or `patch`/`minor`/`major`/`custom`).
-3. Click **Run workflow**. The workflow runs checks, creates a tag + GitHub
-   release, bumps `pyproject.toml` and `CHANGELOG.md`, and publishes to
-   [PyPI](https://pypi.org/project/strands-apify/).
-
-### Beta releases
-
-Beta releases are also triggered manually, from **Actions** >
-[**Create a pre-release**](https://github.com/apify/strands-apify/actions/workflows/pre_release.yml)
-> **Run workflow**. The workflow runs the same checks as the stable release,
-bumps to the next beta version, updates the changelog, and publishes a
-`X.Y.Zb<N>` wheel to PyPI. (Automatic beta-on-push-to-main may be enabled
-later; for now both stable and beta releases are manual.)
-
-### Notes
-
-- Do not create tags or releases manually, the workflow handles both.
-- Release notes come from conventional commit subjects via git-cliff. You can
-  edit the GitHub release body afterward if you want hand-curated notes.
-
+Both wait for the `Checks` workflow to pass on the commit. Don't edit the version or `CHANGELOG.md` by hand, and don't
+create tags or releases manually.
 
 ## Security issue notifications
 

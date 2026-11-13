@@ -14,42 +14,42 @@ from apify_client._models import Run
 # Shaped like a real `GET /v2/actor-runs/{id}` response and validated into the `Run` model that `.call()` returns.
 MOCK_ACTOR_RUN = Run.model_validate(
     {
-        "id": "run-HG7ml5fB1hCp8YEBA",
-        "actId": "actor~my-scraper",
-        "userId": "user-abc123",
-        "startedAt": "2026-03-15T14:30:00.000Z",
-        "finishedAt": "2026-03-15T14:35:22.000Z",
-        "status": "SUCCEEDED",
-        "statusMessage": "Actor finished successfully",
-        "meta": {"origin": "API"},
-        "generalAccess": "FOLLOW_USER_SETTING",
-        "stats": {"computeUnits": 0.01, "restartCount": 0, "resurrectCount": 0},
-        "options": {"build": "latest", "timeoutSecs": 300, "memoryMbytes": 1024, "diskMbytes": 2048},
-        "buildId": "build-Zx8Kq2fB1hCp8YEBA",
-        "buildNumber": "1.2.3",
-        "defaultDatasetId": "dataset-WkC9gct8rq1uR5vDZ",
-        "defaultKeyValueStoreId": "kvs-Xb3A8gct8rq1uR5vD",
-        "defaultRequestQueueId": "rq-Pq7Lm2gct8rq1uR5v",
+        'id': 'run-HG7ml5fB1hCp8YEBA',
+        'actId': 'actor~my-scraper',
+        'userId': 'user-abc123',
+        'startedAt': '2026-03-15T14:30:00.000Z',
+        'finishedAt': '2026-03-15T14:35:22.000Z',
+        'status': 'SUCCEEDED',
+        'statusMessage': 'Actor finished successfully',
+        'meta': {'origin': 'API'},
+        'generalAccess': 'FOLLOW_USER_SETTING',
+        'stats': {'computeUnits': 0.01, 'restartCount': 0, 'resurrectCount': 0},
+        'options': {'build': 'latest', 'timeoutSecs': 300, 'memoryMbytes': 1024, 'diskMbytes': 2048},
+        'buildId': 'build-Zx8Kq2fB1hCp8YEBA',
+        'buildNumber': '1.2.3',
+        'defaultDatasetId': 'dataset-WkC9gct8rq1uR5vDZ',
+        'defaultKeyValueStoreId': 'kvs-Xb3A8gct8rq1uR5vD',
+        'defaultRequestQueueId': 'rq-Pq7Lm2gct8rq1uR5v',
     }
 )
 
 MOCK_FAILED_RUN = MOCK_ACTOR_RUN.model_copy(
-    update={"status": "FAILED", "status_message": "Actor failed with an error"},
+    update={'status': 'FAILED', 'status_message': 'Actor failed with an error'},
 )
 
 MOCK_TIMED_OUT_RUN = MOCK_ACTOR_RUN.model_copy(
-    update={"status": "TIMED-OUT", "status_message": "Actor run timed out"},
+    update={'status': 'TIMED-OUT', 'status_message': 'Actor run timed out'},
 )
 
 MOCK_DATASET_ITEMS = [
-    {"url": "https://example.com/product/1", "title": "Widget A", "price": 19.99, "currency": "USD"},
-    {"url": "https://example.com/product/2", "title": "Widget B", "price": 29.99, "currency": "USD"},
-    {"url": "https://example.com/product/3", "title": "Widget C", "price": 39.99, "currency": "EUR"},
+    {'url': 'https://example.com/product/1', 'title': 'Widget A', 'price': 19.99, 'currency': 'USD'},
+    {'url': 'https://example.com/product/2', 'title': 'Widget B', 'price': 29.99, 'currency': 'USD'},
+    {'url': 'https://example.com/product/3', 'title': 'Widget C', 'price': 39.99, 'currency': 'EUR'},
 ]
 
 
 @pytest.fixture
-def mock_apify_client():
+def mock_apify_client() -> MagicMock:
     """Create a mock ApifyClient with pre-configured Actor / task / dataset responses.
 
     All three sub-clients (``actor``, ``task``, ``dataset``) are wired up so
@@ -75,18 +75,18 @@ def mock_apify_client():
 
 
 @pytest.fixture(autouse=True)
-def default_ceilings(monkeypatch):
+def default_ceilings(monkeypatch: pytest.MonkeyPatch) -> None:
     """Run every test against the default ceilings, whatever `STRANDS_APIFY_MAX_*` the developer's shell exports."""
     for env_var in (
-        "STRANDS_APIFY_MAX_TIMEOUT_SECS",
-        "STRANDS_APIFY_MAX_MEMORY_MBYTES",
-        "STRANDS_APIFY_MAX_ITEMS",
-        "STRANDS_APIFY_MAX_CRAWL_DEPTH",
+        'STRANDS_APIFY_MAX_TIMEOUT_SECS',
+        'STRANDS_APIFY_MAX_MEMORY_MBYTES',
+        'STRANDS_APIFY_MAX_ITEMS',
+        'STRANDS_APIFY_MAX_CRAWL_DEPTH',
     ):
         monkeypatch.delenv(env_var, raising=False)
 
 
 @pytest.fixture
-def mock_apify_env(monkeypatch):
+def mock_apify_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Set required Apify environment variables."""
-    monkeypatch.setenv("APIFY_TOKEN", "apify_api_test-token-12345")
+    monkeypatch.setenv('APIFY_TOKEN', 'apify_api_test-token-12345')

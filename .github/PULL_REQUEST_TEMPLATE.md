@@ -15,7 +15,7 @@
 
 <!-- How did you verify this works? Include commands you ran. -->
 
-- [ ] `hatch run prepare` passes (format, lint, mypy, pytest)
+- [ ] `uv run poe check-code` passes (lint, type check, unit tests)
 - [ ] New / changed tools have tests covering: happy path, missing `APIFY_TOKEN`, missing `apify-client`, Actor failure, at least one input-validation failure
 - [ ] Docstrings include `Args:` and `Returns:` blocks (these become LLM-facing tool descriptions)
 

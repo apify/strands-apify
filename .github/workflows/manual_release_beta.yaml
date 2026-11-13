@@ -1,0 +1,98 @@
+name: Beta release
+
+on:
+  # Runs when manually triggered from the GitHub UI, or dispatched from `on_main.yaml`
+  # via the `apify/actions/execute-workflow` action for the automatic beta release on push to main.
+  # Note: This workflow is intentionally NOT a reusable workflow (no `workflow_call`) because PyPI's
+  # Trusted Publishing does not currently support reusable workflows.
+  # See: https://docs.pypi.org/trusted-publishers/troubleshooting/#reusable-workflows-on-github
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  wait_for_checks:
+    # Gate the release on the `Checks` workflow already succeeding on this commit (run by `on_main.yaml`).
+    name: Wait for required checks
+    runs-on: ubuntu-latest
+    permissions:
+      checks: read
+    steps:
+      - name: Wait for checks
+        uses: apify/actions/wait-for-checks@v1.6.2
+        with:
+          ref: ${{ github.sha }}
+          check-regexp: ^Checks
+
+  release_prepare:
+    name: Release prepare
+    needs: [wait_for_checks]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # git-cliff enhances release notes with PR links via GITHUB_TOKEN.
+      issues: read # git-cliff enhances release notes with issue links via GITHUB_TOKEN.
+    outputs:
+      version_number: ${{ steps.release_prepare.outputs.version_number }}
+      changelog: ${{ steps.release_prepare.outputs.changelog }}
+    steps:
+      - name: Verify running on main in the apify org
+        if: github.ref != 'refs/heads/main' || !startsWith(github.repository, 'apify/')
+        run: |
+          echo "::error title=Wrong branch or repository::Releases must run from main in an apify/ repository. ref=${{ github.ref }} repo=${{ github.repository }}"
+          exit 1
+
+      - uses: apify/actions/git-cliff-release@v1.6.2
+        id: release_prepare
+        name: Release prepare
+        with:
+          release_type: prerelease
+          existing_changelog_path: CHANGELOG.md
+
+  changelog_update:
+    name: Changelog update
+    needs: [release_prepare]
+    permissions:
+      contents: write
+    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@main
+    with:
+      version_number: ${{ needs.release_prepare.outputs.version_number }}
+      changelog: ${{ needs.release_prepare.outputs.changelog }}
+    secrets: inherit
+
+  pypi_publish:
+    name: PyPI publish
+    needs: [release_prepare, changelog_update]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write # Required for OIDC authentication.
+    environment:
+      name: pypi
+      url: https://pypi.org/project/strands-apify
+    steps:
+      - name: Prepare distribution
+        uses: apify/actions/prepare-pypi-distribution@v1.6.2
+        with:
+          package_name: strands-apify
+          is_prerelease: "yes"
+          version_number: ${{ needs.release_prepare.outputs.version_number }}
+          ref: ${{ needs.changelog_update.outputs.changelog_commitish }}
+
+      - name: Verify built package
+        uses: apify/actions/python-package-check@v1.6.2
+        with:
+          package_name: strands_apify
+          dist_dir: dist
+          python_version: "3.14"
+          smoke_code: |
+            from strands_apify import APIFY_ALL_TOOLS, ApifyToolClient, apify_web_fetch
+
+      # Publish the package to PyPI using PyPA official GitHub action with OIDC authentication.
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
