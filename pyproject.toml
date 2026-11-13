@@ -57,7 +57,6 @@ source-include = [
     "CONTRIBUTING.md",
     "SECURITY.md",
     "llms.txt",
-    "tests/**",
 ]
 
 # Run tasks with: uv run poe <task>
