@@ -157,6 +157,9 @@ Markers found inside the content are replaced with `[marker removed]`. Set
 - Set `STRANDS_APIFY_MAX_TOTAL_CHARGE_USD` (e.g. `0.50`) to cap what each Actor or task
   run may cost. It is unset by default, the agent can't change it, and an invalid value
   makes the tools return an error. `apify_web_fetch` doesn't start a run, so it isn't capped.
+  Some Actors require a higher limit (`apify/e-commerce-scraping-tool` needs at least
+  $1.00); runs below an Actor's minimum fail with "Maximum cost per run is less than the
+  allowed minimum".
 - The package sends `x-apify-integration-platform: strands-agents` on every API
   request for attribution.
 

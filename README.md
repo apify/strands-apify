@@ -168,6 +168,9 @@ Every tool that starts an Actor or task run passes the limit to Apify, and the p
 reaches it. The agent can't change it. A value that isn't a positive number makes the tools return an error instead of
 running without the limit. `apify_web_fetch` doesn't start a run, so the limit doesn't apply to it.
 
+Some Actors require a higher limit. `apify/e-commerce-scraping-tool`, for example, needs at least $1.00, and runs below
+an Actor's minimum fail with "Maximum cost per run is less than the allowed minimum".
+
 ### Untrusted output
 
 Scraped pages and other third-party content can carry prompt injections. Tools that return such content wrap it in
