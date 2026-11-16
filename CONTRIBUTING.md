@@ -81,7 +81,10 @@ below 1.0, a breaking change bumps the minor version and a feature bumps the pat
   version. The workflow bumps `pyproject.toml`, writes the changelog, tags the release, creates the GitHub release and
   publishes to PyPI.
 
-Both wait for the `Checks` workflow to pass on the commit. Don't edit the version or `CHANGELOG.md` by hand, and don't
+Both release workflows publish through
+[`release.yml`](https://github.com/apify/strands-apify/actions/workflows/release.yml), the one workflow registered as
+the PyPI trusted publisher, so beta and stable releases have the same provenance. Both wait for the `Checks` workflow to
+pass on the commit. Don't edit the version or `CHANGELOG.md` by hand, and don't
 create tags or releases manually.
 
 ## Security issue notifications
