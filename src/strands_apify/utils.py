@@ -250,8 +250,10 @@ class ApifyToolClient:
         if not token:
             raise ValueError(
                 "APIFY_TOKEN environment variable is not set. "
-                "Get your token at https://console.apify.com/settings/integrations"
-                "?utm_source=strands-agents&utm_medium=integrations"
+                "Create an Apify API token at "
+                "https://console.apify.com/settings/integrations?createApiToken=true"
+                "&for=Strands%20Agents&utm_source=strands-agents&utm_medium=integrations"
+                " (it is shown only once)."
             )
         self.client: ApifyClient = ApifyClient(token, headers=TRACKING_HEADER)
 

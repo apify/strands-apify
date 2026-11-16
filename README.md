@@ -23,7 +23,7 @@ Set your Apify token:
 export APIFY_TOKEN=your_apify_token_here
 ```
 
-Get a token at [Apify Console > Settings > API & Integrations](https://console.apify.com/settings/integrations?utm_source=strands-agents&utm_medium=integrations).
+Create an API token for Strands Agents in [Apify Console](https://console.apify.com/settings/integrations?createApiToken=true&for=Strands%20Agents&utm_source=strands-agents&utm_medium=integrations) and copy it right after creating it — it is shown only once.
 
 ## Quick start
 
@@ -134,7 +134,7 @@ apify_website_content_crawler(
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `APIFY_TOKEN` | Your Apify token from [console.apify.com](https://console.apify.com/settings/integrations?utm_source=strands-agents&utm_medium=integrations) | Yes |
+| `APIFY_TOKEN` | Your Apify API token, created in [Apify Console](https://console.apify.com/settings/integrations?createApiToken=true&for=Strands%20Agents&utm_source=strands-agents&utm_medium=integrations) (shown only once) | Yes |
 | `STRANDS_APIFY_QUIET` | Set to `1` to suppress the rich panels printed on each tool call. Panels are auto-suppressed in non-interactive environments (CI, Docker, web services); use this flag to silence them in interactive shells too. | No |
 | `STRANDS_APIFY_MAX_TIMEOUT_SECS` | Ceiling for `timeout_secs`. Default `600`. | No |
 | `STRANDS_APIFY_MAX_ITEMS` | Ceiling for `limit`, `dataset_items_limit`, `results_limit`, `search_limit`, `max_reviews` and `max_pages`. Default `1000`. LinkedIn profile posts stays at its own `100` unless this is set lower. | No |
