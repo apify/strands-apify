@@ -81,11 +81,12 @@ jobs:
     needs: [release_prepare]
     permissions:
       contents: write
-    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@main
+    uses: apify/workflows/.github/workflows/python_bump_and_update_changelog.yaml@v1.2.0
     with:
       version_number: ${{ needs.release_prepare.outputs.version_number }}
       changelog: ${{ needs.release_prepare.outputs.changelog }}
-    secrets: inherit
+    secrets:
+      APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN: ${{ secrets.APIFY_SERVICE_ACCOUNT_GITHUB_TOKEN }}
 
   github_release:
     name: GitHub release
