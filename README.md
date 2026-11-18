@@ -23,7 +23,7 @@ Set your Apify token:
 export APIFY_TOKEN=your_apify_token_here
 ```
 
-Create an API token for Strands Agents in [Apify Console](https://console.apify.com/settings/integrations?createApiToken=true&for=Strands%20Agents&utm_source=strands-agents&utm_medium=integrations) and copy it right after creating it — it is shown only once.
+Create an API token for Strands Agents in [Apify Console](https://console.apify.com/settings/integrations?createApiToken=true&for=Strands%20Agents&utm_source=strands-agents&utm_medium=integrations) and copy it right after creating it, as it is shown only once.
 
 ## Quick start
 
