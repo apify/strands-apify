@@ -4,7 +4,6 @@
 [default]
 extend-ignore-re = [
     "https?://[^\\s]+", # Ignore URLs
-    "\\w+\\.\\.\\.",    # Ignore words truncated in sample output
 ]
 
 [files]

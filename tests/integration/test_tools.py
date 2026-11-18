@@ -83,3 +83,4 @@ def test_invalid_token_returns_an_error(monkeypatch: pytest.MonkeyPatch) -> None
     result = apify_get_dataset_items(dataset_id='nonexistent-dataset')
 
     assert result['status'] == 'error'
+    assert 'Authentication failed' in result['content'][0]['text']

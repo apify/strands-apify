@@ -42,6 +42,13 @@ jobs:
       name: pypi
       url: https://pypi.org/project/strands-apify
     steps:
+      # The release workflows dispatch this one on their own ref, so a release from main runs here on main too.
+      - name: Verify running on main in the apify org
+        if: github.ref != 'refs/heads/main' || !startsWith(github.repository, 'apify/')
+        run: |
+          echo "::error title=Wrong branch or repository::Publishing must run from main in an apify/ repository."
+          exit 1
+
       - name: Prepare distribution
         uses: apify/actions/prepare-pypi-distribution@v1.6.2
         with:
