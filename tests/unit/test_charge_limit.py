@@ -78,7 +78,7 @@ def test_runs_have_no_charge_limit_by_default(
         result = run()
 
     assert result['status'] == 'success', result['content'][0]['text']
-    assert 'max_total_charge_usd' not in _call_kwargs(mock_apify_client, sub_client)
+    assert _call_kwargs(mock_apify_client, sub_client)['max_total_charge_usd'] is None
 
 
 @pytest.mark.parametrize('value', ['abc', '0', '-1', 'nan', 'inf'])

@@ -183,7 +183,8 @@ Source: apify:apify/google-search-scraper
 <<<END_EXTERNAL_UNTRUSTED_CONTENT>>>
 ```
 
-Markers found inside the content are replaced with `[marker removed]`, so the content can't close the wrapper early.
+Markers found inside the content, including case and whitespace variants, are replaced with `[marker removed]`, so
+the content can't close the wrapper early.
 `apify_run_actor` and `apify_run_task` return only the platform's run metadata and aren't wrapped. Set
 `STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED=0` if you process the tool output as plain JSON yourself.
 

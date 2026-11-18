@@ -136,8 +136,9 @@ Source: apify:apify/google-search-scraper
 <<<END_EXTERNAL_UNTRUSTED_CONTENT>>>
 ```
 
-Markers found inside the content are replaced with `[marker removed]`. Set
-`STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED=0` to get the plain payload.
+Markers found inside the content, including case and whitespace variants, are replaced
+with `[marker removed]`. Set `STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED=0` to get the plain
+payload.
 
 ## Usage notes
 

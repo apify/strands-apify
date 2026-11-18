@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import re
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from typing import TYPE_CHECKING, Any, Literal, get_args
@@ -31,6 +32,13 @@ _OFF_ENV_VALUES = frozenset({'0', 'false', 'no', 'off'})
 # The markers around tool output that the LLM must treat as untrusted data, never as instructions.
 UNTRUSTED_CONTENT_START = '<<<EXTERNAL_UNTRUSTED_CONTENT>>>'
 UNTRUSTED_CONTENT_END = '<<<END_EXTERNAL_UNTRUSTED_CONTENT>>>'
+# Also matches case and whitespace variants an LLM could read as the markers. Whitespace includes the `\t`, `\n` and
+# `\r` escapes, because the content is usually JSON, where a tab or newline in a scraped page appears escaped.
+_SPACE = r'(?:\s|\\[tnr])*'
+_MARKER_PATTERN = re.compile(
+    rf'<<<{_SPACE}(?:END[\s_]*)?EXTERNAL[\s_]+UNTRUSTED[\s_]+CONTENT{_SPACE}>>>',
+    re.IGNORECASE,
+)
 
 
 def _panels_enabled() -> bool:
@@ -130,8 +138,7 @@ def _marking_enabled() -> bool:
 def _mark_untrusted(text: str, source: str) -> str:
     """Wrap third-party content in markers that tell the LLM to treat it as data, never as instructions."""
     # Scraped text could contain the markers and close the wrapper early.
-    for marker in (UNTRUSTED_CONTENT_START, UNTRUSTED_CONTENT_END):
-        text = text.replace(marker, '[marker removed]')
+    text = _MARKER_PATTERN.sub('[marker removed]', text)
     return f'{UNTRUSTED_CONTENT_START}\nSource: {source}\n{text}\n{UNTRUSTED_CONTENT_END}'
 
 
@@ -200,12 +207,6 @@ def _charge_limit() -> Decimal | None:
     if not value.is_finite() or value <= 0:
         raise ValueError(f'STRANDS_APIFY_MAX_TOTAL_CHARGE_USD must be a positive number of USD, got {raw!r}.')
     return value
-
-
-def _with_charge_limit(call_kwargs: dict[str, Any]) -> dict[str, Any]:
-    """Add the developer's charge limit, if set, to the keyword arguments of an Actor or task `.call()`."""
-    limit = _charge_limit()
-    return call_kwargs if limit is None else {**call_kwargs, 'max_total_charge_usd': limit}
 
 
 # The clamps only cap the upper end. Zero and negative values pass through, so the validators reject them.
@@ -325,6 +326,7 @@ class ApifyToolClient:
         call_kwargs: dict[str, Any] = {
             'run_input': run_input if run_input is not None else {},
             'run_timeout': timedelta(seconds=timeout_secs),
+            'max_total_charge_usd': _charge_limit(),
             'logger': None,
         }
         if memory_mbytes is not None:
@@ -332,7 +334,7 @@ class ApifyToolClient:
         if build is not None:
             call_kwargs['build'] = build
 
-        actor_run = self.client.actor(actor_id).call(**_with_charge_limit(call_kwargs))
+        actor_run = self.client.actor(actor_id).call(**call_kwargs)
         if actor_run is None:
             raise RuntimeError(f'Actor {actor_id} returned no run data (possible wait timeout).')
         _check_run_status(actor_run, f'Actor {actor_id}')
@@ -406,12 +408,12 @@ class ApifyToolClient:
             'maxCrawlPages': 1,
             'crawlerType': crawler_type,
         }
-        call_kwargs: dict[str, Any] = {
-            'run_input': run_input,
-            'run_timeout': timedelta(seconds=timeout_secs),
-            'logger': None,
-        }
-        actor_run = self.client.actor(WEBSITE_CONTENT_CRAWLER).call(**_with_charge_limit(call_kwargs))
+        actor_run = self.client.actor(WEBSITE_CONTENT_CRAWLER).call(
+            run_input=run_input,
+            run_timeout=timedelta(seconds=timeout_secs),
+            max_total_charge_usd=_charge_limit(),
+            logger=None,
+        )
         if actor_run is None:
             raise RuntimeError('Website Content Crawler returned no run data (possible wait timeout).')
         _check_run_status(actor_run, 'Website Content Crawler')
@@ -500,13 +502,16 @@ class ApifyToolClient:
             memory_mbytes = _clamp_memory(memory_mbytes)
         timeout_secs = _clamp_timeout(timeout_secs)
 
-        call_kwargs: dict[str, Any] = {'run_timeout': timedelta(seconds=timeout_secs)}
+        call_kwargs: dict[str, Any] = {
+            'run_timeout': timedelta(seconds=timeout_secs),
+            'max_total_charge_usd': _charge_limit(),
+        }
         if task_input is not None:
             call_kwargs['task_input'] = task_input
         if memory_mbytes is not None:
             call_kwargs['memory_mbytes'] = memory_mbytes
 
-        task_run = self.client.task(task_id).call(**_with_charge_limit(call_kwargs))
+        task_run = self.client.task(task_id).call(**call_kwargs)
         if task_run is None:
             raise RuntimeError(f'Task {task_id} returned no run data (possible wait timeout).')
         _check_run_status(task_run, f'Task {task_id}')
