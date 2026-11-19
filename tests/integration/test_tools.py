@@ -6,6 +6,7 @@ Apify-owned page.
 
 import json
 import os
+import re
 from typing import Any
 
 import pytest
@@ -23,10 +24,24 @@ pytestmark = pytest.mark.skipif(not os.environ.get('APIFY_TOKEN'), reason='APIFY
 HELLO_WORLD = 'apify/hello-world'
 
 
+WRAPPER = re.compile(
+    r'\A<<<EXTERNAL_UNTRUSTED_CONTENT id=(?P<id>\w+)>>>\n.*?\n.*?\n(?P<content>.*)\n'
+    r'<<<END_EXTERNAL_UNTRUSTED_CONTENT id=(?P=id)>>>\Z',
+    re.DOTALL,
+)
+
+
 def _payload(result: dict[str, Any]) -> Any:
-    """Return the tool's JSON payload, failing with the tool's error message if the call did not succeed."""
+    """Return the tool's JSON payload, failing with the tool's error message if the call did not succeed.
+
+    Third-party content comes wrapped in untrusted content markers, so those are checked and removed first.
+    """
     text = result['content'][0]['text']
     assert result['status'] == 'success', text
+    if text.startswith('<<<EXTERNAL_UNTRUSTED_CONTENT'):
+        match = WRAPPER.match(text)
+        assert match, text[:300]
+        text = match['content']
     return json.loads(text)
 
 

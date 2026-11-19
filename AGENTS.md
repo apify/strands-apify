@@ -21,6 +21,12 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tasks, PR conventions and rel
   `TYPE_CHECKING` blocks.
 - Numeric values the LLM supplies go through the `_clamp_*` helpers in `utils.py`. A clamped parameter's description
   states its ceiling as `(clamped to N max by default)`, which `tests/unit/test_clamp_descriptions.py` checks.
+- Settings the LLM must not change, like the charge limit (`STRANDS_APIFY_MAX_TOTAL_CHARGE_USD`), are environment
+  variables read by `utils.py`, never tool parameters. Every Actor and task `.call()` passes
+  `max_total_charge_usd=_charge_limit()`.
+- A tool that returns third-party content passes `untrusted_source` to `_success_result`: `apify:<actor id>`,
+  `apify:task/<id>` or `apify:dataset/<id>`. The text is then wrapped in untrusted content markers with a random id
+  per call, unless `STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED=0`.
 - API access goes through `ApifyToolClient`. It reads `APIFY_TOKEN` and sends the
   `x-apify-integration-platform: strands-agents` tracking header. Keep both.
 - Apify Console links to the API token page (`console.apify.com/settings/integrations`) carry
