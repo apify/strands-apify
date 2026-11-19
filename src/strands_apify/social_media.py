@@ -32,19 +32,19 @@ from .utils import (
 DEFAULT_SOCIAL_MEDIA_RESULTS_LIMIT = 20
 # apimaestro/linkedin-profile-posts returns at most 100 posts per run.
 LINKEDIN_POSTS_MAX_RESULTS = 100
-INSTAGRAM_SCRAPER = "apify/instagram-scraper"
-LINKEDIN_PROFILE_POSTS = "apimaestro/linkedin-profile-posts"
-LINKEDIN_PROFILE_SEARCH = "harvestapi/linkedin-profile-search"
-LINKEDIN_PROFILE_DETAIL = "apimaestro/linkedin-profile-detail"
-TWITTER_SCRAPER = "apidojo/twitter-scraper-lite"
-TIKTOK_SCRAPER = "clockworks/tiktok-scraper"
-FACEBOOK_POSTS_SCRAPER = "apify/facebook-posts-scraper"
+INSTAGRAM_SCRAPER = 'apify/instagram-scraper'
+LINKEDIN_PROFILE_POSTS = 'apimaestro/linkedin-profile-posts'
+LINKEDIN_PROFILE_SEARCH = 'harvestapi/linkedin-profile-search'
+LINKEDIN_PROFILE_DETAIL = 'apimaestro/linkedin-profile-detail'
+TWITTER_SCRAPER = 'apidojo/twitter-scraper-lite'
+TIKTOK_SCRAPER = 'clockworks/tiktok-scraper'
+FACEBOOK_POSTS_SCRAPER = 'apify/facebook-posts-scraper'
 _MISSING_SEARCH_OR_URLS = "Provide at least one of 'search_query' or 'urls'."
 
-VALID_INSTAGRAM_SEARCH_TYPES = ("hashtag", "user", "place")
-VALID_INSTAGRAM_RESULTS_TYPES = ("posts", "comments", "details")
-VALID_TWITTER_SORT_OPTIONS = ("Latest", "Top")
-VALID_LINKEDIN_SCRAPER_MODES = ("Short", "Full")
+VALID_INSTAGRAM_SEARCH_TYPES = ('hashtag', 'user', 'place')
+VALID_INSTAGRAM_RESULTS_TYPES = ('posts', 'comments', 'details')
+VALID_TWITTER_SORT_OPTIONS = ('Latest', 'Top')
+VALID_LINKEDIN_SCRAPER_MODES = ('Short', 'Full')
 
 
 def _looks_like_instagram_url(value: str) -> bool:
@@ -55,23 +55,25 @@ def _looks_like_instagram_url(value: str) -> bool:
     check — e.g. it rejects ``"why-instagram.com-matters"`` and ``"http"``.
     """
     parsed = urlparse(value)
-    if parsed.scheme not in ("http", "https"):
+    if parsed.scheme not in ('http', 'https'):
         return False
-    host = (parsed.hostname or "").lower()
-    return host == "instagram.com" or host.endswith(".instagram.com")
+    host = (parsed.hostname or '').lower()
+    return host == 'instagram.com' or host.endswith('.instagram.com')
 
 
 def _extract_linkedin_username(profile_url: str) -> str:
     """Extract a LinkedIn username from a profile URL, or return the value as-is if already a username."""
     parsed = urlparse(profile_url)
-    if parsed.netloc and "linkedin.com" in parsed.netloc:
-        parts = [p for p in parsed.path.strip("/").split("/") if p]
-        if len(parts) >= 2 and parts[0] == "in":
-            return parts[1]
+    if parsed.netloc and 'linkedin.com' in parsed.netloc:
+        parts = [p for p in parsed.path.strip('/').split('/') if p]
+        match parts:
+            case ['in', username, *_]:
+                return username
     return profile_url
 
 
 def _social_media_result(
+    *,
     actor_name: str,
     client: ApifyToolClient,
     run_input: dict[str, Any],
@@ -89,23 +91,23 @@ def _social_media_result(
     return _success_result(
         text=json.dumps(result, indent=2, default=str),
         panel_body=(
-            f"[green]{actor_name} completed[/green]\n"
-            f"Actor: {actor_id}\n"
-            f"Run ID: {result['run_id']}\n"
-            f"Status: {result['status']}\n"
-            f"Items returned: {len(result['items'])}"
+            f'[green]{actor_name} completed[/green]\n'
+            f'Actor: {actor_id}\n'
+            f'Run ID: {result["run_id"]}\n'
+            f'Status: {result["status"]}\n'
+            f'Items returned: {len(result["items"])}'
         ),
-        panel_title=f"Apify: {actor_name}",
+        panel_title=f'Apify: {actor_name}',
     )
 
 
 @tool
-def apify_instagram_scraper(
+def apify_instagram_scraper(  # noqa: PLR0917
     search_query: str | None = None,
     urls: list[str] | None = None,
-    results_type: str = "posts",
+    results_type: str = 'posts',
     results_limit: int = DEFAULT_SOCIAL_MEDIA_RESULTS_LIMIT,
-    search_type: str = "hashtag",
+    search_type: str = 'hashtag',
     search_limit: int = 10,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
 ) -> dict[str, Any]:
@@ -147,25 +149,25 @@ def apify_instagram_scraper(
                 f"Invalid search_type '{search_type}'. Must be one of: {', '.join(VALID_INSTAGRAM_SEARCH_TYPES)}."
             )
         if urls is not None:
-            _validate_urls(urls, "urls")
+            _validate_urls(urls, 'urls')
 
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
-            "resultsType": results_type,
-            "resultsLimit": results_limit,
+            'resultsType': results_type,
+            'resultsLimit': results_limit,
         }
 
         if urls:
-            run_input["directUrls"] = urls
+            run_input['directUrls'] = urls
         elif search_query and _looks_like_instagram_url(search_query):
-            run_input["directUrls"] = [search_query]
+            run_input['directUrls'] = [search_query]
         else:
-            run_input["search"] = search_query
-            run_input["searchType"] = search_type
-            run_input["searchLimit"] = search_limit
+            run_input['search'] = search_query
+            run_input['searchType'] = search_type
+            run_input['searchLimit'] = search_limit
 
         return _social_media_result(
-            actor_name="Instagram Scraper",
+            actor_name='Instagram Scraper',
             client=client,
             run_input=run_input,
             actor_id=INSTAGRAM_SCRAPER,
@@ -173,7 +175,7 @@ def apify_instagram_scraper(
             results_limit=results_limit,
         )
     except Exception as e:
-        return _error_result(e, "apify_instagram_scraper")
+        return _error_result(e, 'apify_instagram_scraper')
 
 
 @tool
@@ -202,11 +204,11 @@ def apify_linkedin_profile_posts(
         client = ApifyToolClient()
         username = _extract_linkedin_username(profile_url)
         run_input: dict[str, Any] = {
-            "username": username,
-            "limit": min(results_limit, LINKEDIN_POSTS_MAX_RESULTS),
+            'username': username,
+            'limit': min(results_limit, LINKEDIN_POSTS_MAX_RESULTS),
         }
         return _social_media_result(
-            actor_name="LinkedIn Profile Posts",
+            actor_name='LinkedIn Profile Posts',
             client=client,
             run_input=run_input,
             actor_id=LINKEDIN_PROFILE_POSTS,
@@ -214,16 +216,16 @@ def apify_linkedin_profile_posts(
             results_limit=results_limit,
         )
     except Exception as e:
-        return _error_result(e, "apify_linkedin_profile_posts")
+        return _error_result(e, 'apify_linkedin_profile_posts')
 
 
 @tool
-def apify_linkedin_profile_search(
+def apify_linkedin_profile_search(  # noqa: PLR0917
     search_query: str,
     results_limit: int = DEFAULT_SOCIAL_MEDIA_RESULTS_LIMIT,
     locations: list[str] | None = None,
     current_job_titles: list[str] | None = None,
-    profile_scraper_mode: str = "Short",
+    profile_scraper_mode: str = 'Short',
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
 ) -> dict[str, Any]:
     """Search for LinkedIn profiles with filters.
@@ -256,22 +258,22 @@ def apify_linkedin_profile_search(
         if profile_scraper_mode not in VALID_LINKEDIN_SCRAPER_MODES:
             raise ValueError(
                 f"Invalid profile_scraper_mode '{profile_scraper_mode}'. "
-                f"Must be one of: {', '.join(VALID_LINKEDIN_SCRAPER_MODES)}."
+                f'Must be one of: {", ".join(VALID_LINKEDIN_SCRAPER_MODES)}.'
             )
 
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
-            "searchQuery": search_query,
-            "maxItems": results_limit,
-            "profileScraperMode": profile_scraper_mode,
+            'searchQuery': search_query,
+            'maxItems': results_limit,
+            'profileScraperMode': profile_scraper_mode,
         }
         if locations is not None:
-            run_input["locations"] = locations
+            run_input['locations'] = locations
         if current_job_titles is not None:
-            run_input["currentJobTitles"] = current_job_titles
+            run_input['currentJobTitles'] = current_job_titles
 
         return _social_media_result(
-            actor_name="LinkedIn Profile Search",
+            actor_name='LinkedIn Profile Search',
             client=client,
             run_input=run_input,
             actor_id=LINKEDIN_PROFILE_SEARCH,
@@ -279,13 +281,13 @@ def apify_linkedin_profile_search(
             results_limit=results_limit,
         )
     except Exception as e:
-        return _error_result(e, "apify_linkedin_profile_search")
+        return _error_result(e, 'apify_linkedin_profile_search')
 
 
 @tool
 def apify_linkedin_profile_detail(
     profile_url: str,
-    include_email: bool = False,
+    include_email: bool = False,  # noqa: FBT001, FBT002
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
 ) -> dict[str, Any]:
     """Get detailed information from a LinkedIn profile.
@@ -310,11 +312,11 @@ def apify_linkedin_profile_detail(
         client = ApifyToolClient()
         username = _extract_linkedin_username(profile_url)
         run_input: dict[str, Any] = {
-            "username": username,
-            "includeEmail": include_email,
+            'username': username,
+            'includeEmail': include_email,
         }
         return _social_media_result(
-            actor_name="LinkedIn Profile Detail",
+            actor_name='LinkedIn Profile Detail',
             client=client,
             run_input=run_input,
             actor_id=LINKEDIN_PROFILE_DETAIL,
@@ -322,16 +324,16 @@ def apify_linkedin_profile_detail(
             results_limit=DEFAULT_DATASET_ITEMS_LIMIT,
         )
     except Exception as e:
-        return _error_result(e, "apify_linkedin_profile_detail")
+        return _error_result(e, 'apify_linkedin_profile_detail')
 
 
 @tool
-def apify_twitter_scraper(
+def apify_twitter_scraper(  # noqa: PLR0917
     search_query: str | None = None,
     urls: list[str] | None = None,
     twitter_handles: list[str] | None = None,
     results_limit: int = DEFAULT_SOCIAL_MEDIA_RESULTS_LIMIT,
-    sort: str = "Latest",
+    sort: str = 'Latest',
     tweet_language: str | None = None,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
 ) -> dict[str, Any]:
@@ -367,25 +369,25 @@ def apify_twitter_scraper(
         if sort not in VALID_TWITTER_SORT_OPTIONS:
             raise ValueError(f"Invalid sort '{sort}'. Must be one of: {', '.join(VALID_TWITTER_SORT_OPTIONS)}.")
         if urls is not None:
-            _validate_urls(urls, "urls")
+            _validate_urls(urls, 'urls')
 
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
-            "maxItems": results_limit,
-            "sort": sort,
+            'maxItems': results_limit,
+            'sort': sort,
         }
 
         if search_query:
-            run_input["searchTerms"] = [search_query]
+            run_input['searchTerms'] = [search_query]
         if urls:
-            run_input["startUrls"] = urls
+            run_input['startUrls'] = urls
         if twitter_handles:
-            run_input["twitterHandles"] = twitter_handles
+            run_input['twitterHandles'] = twitter_handles
         if tweet_language is not None:
-            run_input["tweetLanguage"] = tweet_language
+            run_input['tweetLanguage'] = tweet_language
 
         return _social_media_result(
-            actor_name="Twitter Scraper",
+            actor_name='Twitter Scraper',
             client=client,
             run_input=run_input,
             actor_id=TWITTER_SCRAPER,
@@ -393,11 +395,11 @@ def apify_twitter_scraper(
             results_limit=results_limit,
         )
     except Exception as e:
-        return _error_result(e, "apify_twitter_scraper")
+        return _error_result(e, 'apify_twitter_scraper')
 
 
 @tool
-def apify_tiktok_scraper(
+def apify_tiktok_scraper(  # noqa: PLR0917
     search_query: str | None = None,
     hashtags: list[str] | None = None,
     profiles: list[str] | None = None,
@@ -434,22 +436,22 @@ def apify_tiktok_scraper(
         if not search_query and not hashtags and not profiles and not urls:
             raise ValueError("Provide at least one of 'search_query', 'hashtags', 'profiles', or 'urls'.")
         if urls is not None:
-            _validate_urls(urls, "urls")
+            _validate_urls(urls, 'urls')
 
         client = ApifyToolClient()
-        run_input: dict[str, Any] = {"resultsPerPage": results_limit}
+        run_input: dict[str, Any] = {'resultsPerPage': results_limit}
 
         if search_query:
-            run_input["searchQueries"] = [search_query]
+            run_input['searchQueries'] = [search_query]
         if hashtags:
-            run_input["hashtags"] = hashtags
+            run_input['hashtags'] = hashtags
         if profiles:
-            run_input["profiles"] = profiles
+            run_input['profiles'] = profiles
         if urls:
-            run_input["postURLs"] = urls
+            run_input['postURLs'] = urls
 
         return _social_media_result(
-            actor_name="TikTok Scraper",
+            actor_name='TikTok Scraper',
             client=client,
             run_input=run_input,
             actor_id=TIKTOK_SCRAPER,
@@ -457,7 +459,7 @@ def apify_tiktok_scraper(
             results_limit=results_limit,
         )
     except Exception as e:
-        return _error_result(e, "apify_tiktok_scraper")
+        return _error_result(e, 'apify_tiktok_scraper')
 
 
 @tool
@@ -490,14 +492,14 @@ def apify_facebook_posts_scraper(
         _validate_url(page_url)
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
-            "startUrls": [{"url": page_url}],
-            "resultsLimit": results_limit,
+            'startUrls': [{'url': page_url}],
+            'resultsLimit': results_limit,
         }
         if only_posts_newer_than is not None:
-            run_input["onlyPostsNewerThan"] = only_posts_newer_than
+            run_input['onlyPostsNewerThan'] = only_posts_newer_than
 
         return _social_media_result(
-            actor_name="Facebook Posts Scraper",
+            actor_name='Facebook Posts Scraper',
             client=client,
             run_input=run_input,
             actor_id=FACEBOOK_POSTS_SCRAPER,
@@ -505,7 +507,7 @@ def apify_facebook_posts_scraper(
             results_limit=results_limit,
         )
     except Exception as e:
-        return _error_result(e, "apify_facebook_posts_scraper")
+        return _error_result(e, 'apify_facebook_posts_scraper')
 
 
 APIFY_SOCIAL_TOOLS = [

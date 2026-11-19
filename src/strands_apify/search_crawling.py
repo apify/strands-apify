@@ -28,16 +28,17 @@ from .utils import (
     _validate_urls,
 )
 
-GOOGLE_SEARCH_SCRAPER_ID = "apify/google-search-scraper"
-GOOGLE_PLACES_SCRAPER_ID = "compass/crawler-google-places"
-YOUTUBE_SCRAPER_ID = "streamers/youtube-scraper"
-ECOMMERCE_SCRAPER_ID = "apify/e-commerce-scraping-tool"
+GOOGLE_SEARCH_SCRAPER_ID = 'apify/google-search-scraper'
+GOOGLE_PLACES_SCRAPER_ID = 'compass/crawler-google-places'
+YOUTUBE_SCRAPER_ID = 'streamers/youtube-scraper'
+ECOMMERCE_SCRAPER_ID = 'apify/e-commerce-scraping-tool'
 DEFAULT_SEARCH_RESULTS_LIMIT = 20
 
-VALID_ECOMMERCE_URL_TYPES = ("product", "listing")
+VALID_ECOMMERCE_URL_TYPES = ('product', 'listing')
 
 
 def _search_crawl_result(
+    *,
     actor_name: str,
     client: ApifyToolClient,
     run_input: dict[str, Any],
@@ -55,9 +56,9 @@ def _search_crawl_result(
     return _success_result(
         text=json.dumps(result, indent=2, default=str),
         panel_body=(
-            f"[green]{actor_name} completed[/green]\nRun ID: {result['run_id']}\nItems returned: {len(result['items'])}"
+            f'[green]{actor_name} completed[/green]\nRun ID: {result["run_id"]}\nItems returned: {len(result["items"])}'
         ),
-        panel_title=f"Apify: {actor_name}",
+        panel_title=f'Apify: {actor_name}',
     )
 
 
@@ -94,15 +95,15 @@ def apify_google_search_scraper(
         client = ApifyToolClient()
         max_pages = max(1, (results_limit + 9) // 10)
         run_input: dict[str, Any] = {
-            "queries": search_query,
-            "maxPagesPerQuery": max_pages,
+            'queries': search_query,
+            'maxPagesPerQuery': max_pages,
         }
         if country_code is not None:
-            run_input["countryCode"] = country_code
+            run_input['countryCode'] = country_code
         if language_code is not None:
-            run_input["languageCode"] = language_code
+            run_input['languageCode'] = language_code
         return _search_crawl_result(
-            actor_name="Google Search Scraper",
+            actor_name='Google Search Scraper',
             client=client,
             run_input=run_input,
             actor_id=GOOGLE_SEARCH_SCRAPER_ID,
@@ -110,15 +111,15 @@ def apify_google_search_scraper(
             results_limit=results_limit,
         )
     except Exception as e:
-        return _error_result(e, "apify_google_search_scraper")
+        return _error_result(e, 'apify_google_search_scraper')
 
 
 @tool
-def apify_google_places_scraper(
+def apify_google_places_scraper(  # noqa: PLR0917
     search_query: str,
     results_limit: int = DEFAULT_SEARCH_RESULTS_LIMIT,
     language: str | None = None,
-    include_reviews: bool = False,
+    include_reviews: bool = False,  # noqa: FBT001, FBT002
     max_reviews: int = 5,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
 ) -> dict[str, Any]:
@@ -146,14 +147,14 @@ def apify_google_places_scraper(
         max_reviews = _clamp_items(max_reviews)
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
-            "searchStringsArray": [search_query],
-            "maxCrawledPlacesPerSearch": results_limit,
-            "maxReviews": max_reviews if include_reviews else 0,
+            'searchStringsArray': [search_query],
+            'maxCrawledPlacesPerSearch': results_limit,
+            'maxReviews': max_reviews if include_reviews else 0,
         }
         if language is not None:
-            run_input["language"] = language
+            run_input['language'] = language
         return _search_crawl_result(
-            actor_name="Google Places Scraper",
+            actor_name='Google Places Scraper',
             client=client,
             run_input=run_input,
             actor_id=GOOGLE_PLACES_SCRAPER_ID,
@@ -161,7 +162,7 @@ def apify_google_places_scraper(
             results_limit=results_limit,
         )
     except Exception as e:
-        return _error_result(e, "apify_google_places_scraper")
+        return _error_result(e, 'apify_google_places_scraper')
 
 
 @tool
@@ -192,17 +193,17 @@ def apify_youtube_scraper(
         if not search_query and not urls:
             raise ValueError("At least one of 'search_query' or 'urls' must be provided.")
         if urls is not None:
-            _validate_urls(urls, "urls")
+            _validate_urls(urls, 'urls')
         client = ApifyToolClient()
         run_input: dict[str, Any] = {
-            "maxResults": results_limit,
+            'maxResults': results_limit,
         }
         if search_query is not None:
-            run_input["searchQueries"] = [search_query]
+            run_input['searchQueries'] = [search_query]
         if urls is not None:
-            run_input["startUrls"] = [{"url": u} for u in urls]
+            run_input['startUrls'] = [{'url': u} for u in urls]
         return _search_crawl_result(
-            actor_name="YouTube Scraper",
+            actor_name='YouTube Scraper',
             client=client,
             run_input=run_input,
             actor_id=YOUTUBE_SCRAPER_ID,
@@ -210,7 +211,7 @@ def apify_youtube_scraper(
             results_limit=results_limit,
         )
     except Exception as e:
-        return _error_result(e, "apify_youtube_scraper")
+        return _error_result(e, 'apify_youtube_scraper')
 
 
 @tool
@@ -238,19 +239,19 @@ def apify_website_content_crawler(
     """
     try:
         _check_dependency()
-        _validate_non_negative(max_depth, "max_depth")
+        _validate_non_negative(max_depth, 'max_depth')
         max_pages = _clamp_items(max_pages)
         max_depth = _clamp_depth(max_depth)
         client = ApifyToolClient()
         _validate_url(start_url)
         run_input: dict[str, Any] = {
-            "startUrls": [{"url": start_url}],
-            "maxCrawlPages": max_pages,
-            "maxCrawlDepth": max_depth,
-            "proxyConfiguration": {"useApifyProxy": True},
+            'startUrls': [{'url': start_url}],
+            'maxCrawlPages': max_pages,
+            'maxCrawlDepth': max_depth,
+            'proxyConfiguration': {'useApifyProxy': True},
         }
         return _search_crawl_result(
-            actor_name="Website Content Crawler",
+            actor_name='Website Content Crawler',
             client=client,
             run_input=run_input,
             actor_id=WEBSITE_CONTENT_CRAWLER,
@@ -258,13 +259,13 @@ def apify_website_content_crawler(
             results_limit=max_pages,
         )
     except Exception as e:
-        return _error_result(e, "apify_website_content_crawler")
+        return _error_result(e, 'apify_website_content_crawler')
 
 
 @tool
 def apify_ecommerce_scraper(
     url: str,
-    url_type: str = "product",
+    url_type: str = 'product',
     results_limit: int = DEFAULT_SEARCH_RESULTS_LIMIT,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
 ) -> dict[str, Any]:
@@ -293,13 +294,13 @@ def apify_ecommerce_scraper(
         _validate_url(url)
         if url_type not in VALID_ECOMMERCE_URL_TYPES:
             raise ValueError(f"Invalid url_type '{url_type}'. Must be one of: {', '.join(VALID_ECOMMERCE_URL_TYPES)}.")
-        url_field = "listingUrls" if url_type == "listing" else "detailsUrls"
+        url_field = 'listingUrls' if url_type == 'listing' else 'detailsUrls'
         run_input: dict[str, Any] = {
-            url_field: [{"url": url}],
-            "maxProductResults": results_limit,
+            url_field: [{'url': url}],
+            'maxProductResults': results_limit,
         }
         return _search_crawl_result(
-            actor_name="E-commerce Scraper",
+            actor_name='E-commerce Scraper',
             client=client,
             run_input=run_input,
             actor_id=ECOMMERCE_SCRAPER_ID,
@@ -307,7 +308,7 @@ def apify_ecommerce_scraper(
             results_limit=results_limit,
         )
     except Exception as e:
-        return _error_result(e, "apify_ecommerce_scraper")
+        return _error_result(e, 'apify_ecommerce_scraper')
 
 
 APIFY_SEARCH_TOOLS = [

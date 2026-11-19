@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/strands-apify.svg)](https://pypi.org/project/strands-apify/)
 [![Python versions](https://img.shields.io/pypi/pyversions/strands-apify.svg)](https://pypi.org/project/strands-apify/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Code checks](https://github.com/apify/strands-apify/actions/workflows/run_code_checks.yml/badge.svg?branch=main)](https://github.com/apify/strands-apify/actions/workflows/run_code_checks.yml)
+[![Code checks](https://github.com/apify/strands-apify/actions/workflows/on_main.yaml/badge.svg?branch=main)](https://github.com/apify/strands-apify/actions/workflows/on_main.yaml)
 
 Apify tools for the [Strands Agents SDK](https://strandsagents.com/) - web scraping, social media, search, and automation.
 
@@ -32,7 +32,7 @@ from strands import Agent
 from strands_apify import APIFY_CORE_TOOLS
 
 agent = Agent(tools=APIFY_CORE_TOOLS)
-result = agent("Scrape https://example.com and summarize it.")
+result = agent('Scrape https://example.com and summarize it.')
 ```
 
 Or register specific tools:
@@ -71,12 +71,12 @@ Generic Apify platform access - run any Actor, run saved tasks, fetch dataset it
 from strands_apify import apify_web_fetch, apify_run_actor_and_get_dataset
 
 # Single URL
-apify_web_fetch(url="https://example.com", formats=["markdown", "links"])
+apify_web_fetch(url='https://example.com', formats=['markdown', 'links'])
 
 # Any Actor with custom input
 apify_run_actor_and_get_dataset(
-    actor_id="apify/website-content-crawler",
-    run_input={"startUrls": [{"url": "https://docs.example.com"}], "maxCrawlPages": 5},
+    actor_id='apify/website-content-crawler',
+    run_input={'startUrls': [{'url': 'https://docs.example.com'}], 'maxCrawlPages': 5},
 )
 ```
 
@@ -97,12 +97,12 @@ Scrape structured data from popular social platforms.
 ```python
 from strands_apify import apify_twitter_scraper, apify_linkedin_profile_search
 
-apify_twitter_scraper(search_query="from:NASA min_faves:100", results_limit=30)
+apify_twitter_scraper(search_query='from:NASA min_faves:100', results_limit=30)
 
 apify_linkedin_profile_search(
-    search_query="software engineer",
-    locations=["San Francisco"],
-    profile_scraper_mode="Full",
+    search_query='software engineer',
+    locations=['San Francisco'],
+    profile_scraper_mode='Full',
 )
 ```
 
@@ -121,10 +121,10 @@ Search engines, maps, video, multi-page crawls, and e-commerce.
 ```python
 from strands_apify import apify_google_search_scraper, apify_website_content_crawler
 
-apify_google_search_scraper(search_query="best AI frameworks 2025", country_code="us")
+apify_google_search_scraper(search_query='best AI frameworks 2025', country_code='us')
 
 apify_website_content_crawler(
-    start_url="https://docs.example.com",
+    start_url='https://docs.example.com',
     max_pages=20,
     max_depth=3,
 )
