@@ -81,16 +81,16 @@ def apify_run_actor(
         return _success_result(
             text=json.dumps(result, indent=2, default=str),
             panel_body=(
-                f"[green]Actor run completed[/green]\n"
-                f"Actor: {actor_id}\n"
-                f"Run ID: {result['run_id']}\n"
-                f"Status: {result['status']}\n"
-                f"Dataset ID: {result['dataset_id']}"
+                f'[green]Actor run completed[/green]\n'
+                f'Actor: {actor_id}\n'
+                f'Run ID: {result["run_id"]}\n'
+                f'Status: {result["status"]}\n'
+                f'Dataset ID: {result["dataset_id"]}'
             ),
-            panel_title="Apify: Run Actor",
+            panel_title='Apify: Run Actor',
         )
     except Exception as e:
-        return _error_result(e, "apify_run_actor")
+        return _error_result(e, 'apify_run_actor')
 
 
 @tool
@@ -120,16 +120,16 @@ def apify_get_dataset_items(
         return _success_result(
             text=json.dumps(items, indent=2, default=str),
             panel_body=(
-                f"[green]Dataset items retrieved[/green]\nDataset ID: {dataset_id}\nItems returned: {len(items)}"
+                f'[green]Dataset items retrieved[/green]\nDataset ID: {dataset_id}\nItems returned: {len(items)}'
             ),
-            panel_title="Apify: Dataset Items",
+            panel_title='Apify: Dataset Items',
         )
     except Exception as e:
-        return _error_result(e, "apify_get_dataset_items")
+        return _error_result(e, 'apify_get_dataset_items')
 
 
 @tool
-def apify_run_actor_and_get_dataset(
+def apify_run_actor_and_get_dataset(  # noqa: PLR0917
     actor_id: str,
     run_input: dict[str, Any] | None = None,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
@@ -177,17 +177,17 @@ def apify_run_actor_and_get_dataset(
         return _success_result(
             text=json.dumps(result, indent=2, default=str),
             panel_body=(
-                f"[green]Actor run completed with dataset[/green]\n"
-                f"Actor: {actor_id}\n"
-                f"Run ID: {result['run_id']}\n"
-                f"Status: {result['status']}\n"
-                f"Dataset ID: {result['dataset_id']}\n"
-                f"Items returned: {len(result['items'])}"
+                f'[green]Actor run completed with dataset[/green]\n'
+                f'Actor: {actor_id}\n'
+                f'Run ID: {result["run_id"]}\n'
+                f'Status: {result["status"]}\n'
+                f'Dataset ID: {result["dataset_id"]}\n'
+                f'Items returned: {len(result["items"])}'
             ),
-            panel_title="Apify: Run Actor + Dataset",
+            panel_title='Apify: Run Actor + Dataset',
         )
     except Exception as e:
-        return _error_result(e, "apify_run_actor_and_get_dataset")
+        return _error_result(e, 'apify_run_actor_and_get_dataset')
 
 
 @tool
@@ -228,20 +228,20 @@ def apify_run_task(
         return _success_result(
             text=json.dumps(result, indent=2, default=str),
             panel_body=(
-                f"[green]Task run completed[/green]\n"
-                f"Task: {task_id}\n"
-                f"Run ID: {result['run_id']}\n"
-                f"Status: {result['status']}\n"
-                f"Dataset ID: {result['dataset_id']}"
+                f'[green]Task run completed[/green]\n'
+                f'Task: {task_id}\n'
+                f'Run ID: {result["run_id"]}\n'
+                f'Status: {result["status"]}\n'
+                f'Dataset ID: {result["dataset_id"]}'
             ),
-            panel_title="Apify: Run Task",
+            panel_title='Apify: Run Task',
         )
     except Exception as e:
-        return _error_result(e, "apify_run_task")
+        return _error_result(e, 'apify_run_task')
 
 
 @tool
-def apify_run_task_and_get_dataset(
+def apify_run_task_and_get_dataset(  # noqa: PLR0917
     task_id: str,
     task_input: dict[str, Any] | None = None,
     timeout_secs: int = DEFAULT_TIMEOUT_SECS,
@@ -284,17 +284,17 @@ def apify_run_task_and_get_dataset(
         return _success_result(
             text=json.dumps(result, indent=2, default=str),
             panel_body=(
-                f"[green]Task run completed with dataset[/green]\n"
-                f"Task: {task_id}\n"
-                f"Run ID: {result['run_id']}\n"
-                f"Status: {result['status']}\n"
-                f"Dataset ID: {result['dataset_id']}\n"
-                f"Items returned: {len(result['items'])}"
+                f'[green]Task run completed with dataset[/green]\n'
+                f'Task: {task_id}\n'
+                f'Run ID: {result["run_id"]}\n'
+                f'Status: {result["status"]}\n'
+                f'Dataset ID: {result["dataset_id"]}\n'
+                f'Items returned: {len(result["items"])}'
             ),
-            panel_title="Apify: Run Task + Dataset",
+            panel_title='Apify: Run Task + Dataset',
         )
     except Exception as e:
-        return _error_result(e, "apify_run_task_and_get_dataset")
+        return _error_result(e, 'apify_run_task_and_get_dataset')
 
 
 @tool
@@ -336,22 +336,22 @@ def apify_web_fetch(
         return _success_result(
             text=json.dumps(result, indent=2, default=str),
             panel_body=(
-                f"[green]URL fetched[/green]\n"
-                f"URL: {escape(str(result['final_url']))}\n"
-                f"HTTP status: {result['http_status']}\n"
-                f"Title: {escape(str(result['title']))}"
+                f'[green]URL fetched[/green]\n'
+                f'URL: {escape(str(result["final_url"]))}\n'
+                f'HTTP status: {result["http_status"]}\n'
+                f'Title: {escape(str(result["title"]))}'
             ),
-            panel_title="Apify: Web Fetch",
+            panel_title='Apify: Web Fetch',
         )
     except Exception as e:
-        return _error_result(e, "apify_web_fetch")
+        return _error_result(e, 'apify_web_fetch')
 
 
 @tool
 def apify_scrape_url(
     url: str,
     timeout_secs: int = DEFAULT_SCRAPE_TIMEOUT_SECS,
-    crawler_type: CrawlerType = "cheerio",
+    crawler_type: CrawlerType = 'cheerio',
 ) -> dict[str, Any]:
     """Deprecated: use apify_web_fetch instead. Scrape a single URL and return its content as Markdown.
 
@@ -366,7 +366,7 @@ def apify_scrape_url(
         Dict with status and content containing the Markdown content of the scraped page.
     """
     warnings.warn(
-        "apify_scrape_url is deprecated and will be removed in a future release. Use apify_web_fetch.",
+        'apify_scrape_url is deprecated and will be removed in a future release. Use apify_web_fetch.',
         FutureWarning,
         # Strands' tool wrapper adds a frame between the caller and this function.
         stacklevel=3,
@@ -378,12 +378,12 @@ def apify_scrape_url(
         return _success_result(
             text=content,
             panel_body=(
-                f"[green]URL scraped successfully[/green]\nURL: {url}\nContent length: {len(content)} characters"
+                f'[green]URL scraped successfully[/green]\nURL: {url}\nContent length: {len(content)} characters'
             ),
-            panel_title="Apify: Scrape URL",
+            panel_title='Apify: Scrape URL',
         )
     except Exception as e:
-        return _error_result(e, "apify_scrape_url")
+        return _error_result(e, 'apify_scrape_url')
 
 
 APIFY_CORE_TOOLS = [

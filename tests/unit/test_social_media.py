@@ -1,0 +1,613 @@
+"""Tests for the Apify social media tools."""
+
+from typing import Any
+from unittest.mock import MagicMock, patch
+
+import pytest
+from conftest import MOCK_FAILED_RUN
+
+from strands_apify.social_media import (
+    _extract_linkedin_username,
+    _looks_like_instagram_url,
+    apify_facebook_posts_scraper,
+    apify_instagram_scraper,
+    apify_linkedin_profile_detail,
+    apify_linkedin_profile_posts,
+    apify_linkedin_profile_search,
+    apify_tiktok_scraper,
+    apify_twitter_scraper,
+)
+from strands_apify.utils import MAX_ITEMS
+
+# --- _extract_linkedin_username ---
+
+
+def test_extract_linkedin_username_from_url() -> None:
+    """Extracts username from a standard LinkedIn profile URL."""
+    assert _extract_linkedin_username('https://www.linkedin.com/in/neal-mohan') == 'neal-mohan'
+
+
+def test_extract_linkedin_username_from_url_trailing_slash() -> None:
+    """Extracts username from a LinkedIn URL with trailing slash."""
+    assert _extract_linkedin_username('https://www.linkedin.com/in/neal-mohan/') == 'neal-mohan'
+
+
+def test_extract_linkedin_username_bare() -> None:
+    """Passes through a bare username unchanged."""
+    assert _extract_linkedin_username('neal-mohan') == 'neal-mohan'
+
+
+def test_extract_linkedin_username_non_profile_url() -> None:
+    """Non-/in/ LinkedIn URL is returned as-is."""
+    assert (
+        _extract_linkedin_username('https://www.linkedin.com/company/apify') == 'https://www.linkedin.com/company/apify'
+    )
+
+
+# --- apify_instagram_scraper ---
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_instagram_scraper_search_success(mock_apify_client: MagicMock) -> None:
+    """Instagram scraper with search query maps to 'search' field with resultsType and searchLimit."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_instagram_scraper(search_query='apify', results_limit=10, search_type='user')
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    run_input = call_kwargs['run_input']
+    assert run_input['search'] == 'apify'
+    assert run_input['searchType'] == 'user'
+    assert run_input['resultsLimit'] == 10
+    assert run_input['resultsType'] == 'posts'
+    assert run_input['searchLimit'] == 10
+    mock_apify_client.actor.assert_called_once_with('apify/instagram-scraper')
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_instagram_scraper_with_urls(mock_apify_client: MagicMock) -> None:
+    """Instagram scraper with explicit URLs maps to 'directUrls'."""
+    urls = ['https://www.instagram.com/apify/']
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_instagram_scraper(urls=urls, results_limit=5)
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    run_input = call_kwargs['run_input']
+    assert run_input['directUrls'] == urls
+    assert run_input['resultsType'] == 'posts'
+    assert 'search' not in run_input
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_instagram_scraper_results_type(mock_apify_client: MagicMock) -> None:
+    """Instagram scraper passes results_type to Actor input."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_instagram_scraper(search_query='apify', results_type='comments')
+
+    assert result['status'] == 'success'
+    run_input = mock_apify_client.actor.return_value.call.call_args.kwargs['run_input']
+    assert run_input['resultsType'] == 'comments'
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_instagram_scraper_invalid_results_type() -> None:
+    """Instagram scraper returns error for invalid results_type."""
+    result = apify_instagram_scraper(search_query='apify', results_type='invalid')
+
+    assert result['status'] == 'error'
+    assert 'results_type' in result['content'][0]['text']
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_instagram_scraper_invalid_search_type() -> None:
+    """Instagram scraper returns error for invalid search_type."""
+    result = apify_instagram_scraper(search_query='apify', search_type='invalid')
+
+    assert result['status'] == 'error'
+    assert 'search_type' in result['content'][0]['text']
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_instagram_scraper_url_in_search_query(mock_apify_client: MagicMock) -> None:
+    """Instagram scraper routes URL-like search_query to 'directUrls'."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_instagram_scraper(search_query='https://www.instagram.com/apify/')
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    run_input = call_kwargs['run_input']
+    assert run_input['directUrls'] == ['https://www.instagram.com/apify/']
+    assert 'search' not in run_input
+
+
+@pytest.mark.parametrize(
+    'value',
+    [
+        'https://www.instagram.com/apify/',
+        'https://instagram.com/apify',
+        'http://instagram.com/explore/tags/cooking/',
+        'https://www.instagram.com/p/AbCdEfG/',
+    ],
+)
+def test_looks_like_instagram_url_true(value: str) -> None:
+    """Helper returns True for real Instagram URLs (with and without subdomain)."""
+    assert _looks_like_instagram_url(value) is True
+
+
+@pytest.mark.parametrize(
+    'value',
+    [
+        'apify',  # plain handle
+        '#cooking',  # hashtag
+        'why-instagram.com-matters',  # substring trap the old heuristic fell into
+        'http',  # bare scheme prefix the old heuristic accepted
+        'https://example.com/instagram.com',  # not actually hosted on instagram.com
+        'ftp://instagram.com/apify',  # wrong scheme
+        'javascript:alert(1)',
+        '',
+    ],
+)
+def test_looks_like_instagram_url_false(value: str) -> None:
+    """Helper rejects plain queries, lookalikes, and non-http(s) schemes."""
+    assert _looks_like_instagram_url(value) is False
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_instagram_scraper_search_query_with_instagram_substring(mock_apify_client: MagicMock) -> None:
+    """A search_query that merely contains 'instagram.com' is treated as a search, not a URL."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_instagram_scraper(search_query='why-instagram.com-matters')
+
+    assert result['status'] == 'success'
+    run_input = mock_apify_client.actor.return_value.call.call_args.kwargs['run_input']
+    assert run_input['search'] == 'why-instagram.com-matters'
+    assert 'directUrls' not in run_input
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_instagram_scraper_missing_params() -> None:
+    """Instagram scraper returns error when neither search_query nor urls provided."""
+    result = apify_instagram_scraper()
+
+    assert result['status'] == 'error'
+    assert 'search_query' in result['content'][0]['text'] or 'urls' in result['content'][0]['text']
+
+
+# --- apify_linkedin_profile_posts ---
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_linkedin_profile_posts_success(mock_apify_client: MagicMock) -> None:
+    """LinkedIn profile posts maps profile URL to username and results_limit to limit."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_linkedin_profile_posts(
+            profile_url='https://www.linkedin.com/in/neal-mohan',
+            results_limit=15,
+        )
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    run_input = call_kwargs['run_input']
+    assert run_input['username'] == 'neal-mohan'
+    assert run_input['limit'] == 15
+    mock_apify_client.actor.assert_called_once_with('apimaestro/linkedin-profile-posts')
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_linkedin_profile_posts_caps_limit(mock_apify_client: MagicMock) -> None:
+    """LinkedIn profile posts caps the limit at 100 per Actor constraint."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        apify_linkedin_profile_posts(profile_url='neal-mohan', results_limit=200)
+
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    assert call_kwargs['run_input']['limit'] == 100
+
+
+# --- apify_linkedin_profile_search ---
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_linkedin_profile_search_success(mock_apify_client: MagicMock) -> None:
+    """LinkedIn profile search maps search_query to searchQuery and results_limit to maxItems."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_linkedin_profile_search(search_query='software engineer SF', results_limit=25)
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    run_input = call_kwargs['run_input']
+    assert run_input['searchQuery'] == 'software engineer SF'
+    assert run_input['maxItems'] == 25
+    assert run_input['profileScraperMode'] == 'Short'
+    assert 'locations' not in run_input
+    assert 'currentJobTitles' not in run_input
+    mock_apify_client.actor.assert_called_once_with('harvestapi/linkedin-profile-search')
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_linkedin_profile_search_with_filters(mock_apify_client: MagicMock) -> None:
+    """LinkedIn profile search passes locations and job title filters."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_linkedin_profile_search(
+            search_query='engineer',
+            locations=['San Francisco', 'New York'],
+            current_job_titles=['Software Engineer'],
+            profile_scraper_mode='Full',
+        )
+
+    assert result['status'] == 'success'
+    run_input = mock_apify_client.actor.return_value.call.call_args.kwargs['run_input']
+    assert run_input['locations'] == ['San Francisco', 'New York']
+    assert run_input['currentJobTitles'] == ['Software Engineer']
+    assert run_input['profileScraperMode'] == 'Full'
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_linkedin_profile_search_invalid_mode() -> None:
+    """LinkedIn profile search returns error for invalid profile_scraper_mode."""
+    result = apify_linkedin_profile_search(search_query='test', profile_scraper_mode='Invalid')
+
+    assert result['status'] == 'error'
+    assert 'profile_scraper_mode' in result['content'][0]['text']
+
+
+# --- apify_linkedin_profile_detail ---
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_linkedin_profile_detail_success(mock_apify_client: MagicMock) -> None:
+    """LinkedIn profile detail maps profile URL to username field."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_linkedin_profile_detail(profile_url='https://www.linkedin.com/in/neal-mohan')
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    run_input = call_kwargs['run_input']
+    assert run_input['username'] == 'neal-mohan'
+    assert run_input['includeEmail'] is False
+    mock_apify_client.actor.assert_called_once_with('apimaestro/linkedin-profile-detail')
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_linkedin_profile_detail_bare_username(mock_apify_client: MagicMock) -> None:
+    """LinkedIn profile detail accepts a bare username."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_linkedin_profile_detail(profile_url='neal-mohan')
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    assert call_kwargs['run_input']['username'] == 'neal-mohan'
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_linkedin_profile_detail_include_email(mock_apify_client: MagicMock) -> None:
+    """LinkedIn profile detail passes includeEmail when requested."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_linkedin_profile_detail(profile_url='neal-mohan', include_email=True)
+
+    assert result['status'] == 'success'
+    run_input = mock_apify_client.actor.return_value.call.call_args.kwargs['run_input']
+    assert run_input['includeEmail'] is True
+
+
+# --- apify_twitter_scraper ---
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_twitter_scraper_search_success(mock_apify_client: MagicMock) -> None:
+    """Twitter scraper maps search_query to searchTerms array with sort and maxItems."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_twitter_scraper(search_query='from:NASA', results_limit=30)
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    run_input = call_kwargs['run_input']
+    assert run_input['searchTerms'] == ['from:NASA']
+    assert run_input['maxItems'] == 30
+    assert run_input['sort'] == 'Latest'
+    assert 'tweetLanguage' not in run_input
+    mock_apify_client.actor.assert_called_once_with('apidojo/twitter-scraper-lite')
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_twitter_scraper_with_urls(mock_apify_client: MagicMock) -> None:
+    """Twitter scraper maps urls to startUrls as objects."""
+    tweet_urls = ['https://x.com/elonmusk/status/1728108619189874825']
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_twitter_scraper(urls=tweet_urls)
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    assert call_kwargs['run_input']['startUrls'] == ['https://x.com/elonmusk/status/1728108619189874825']
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_twitter_scraper_with_handles(mock_apify_client: MagicMock) -> None:
+    """Twitter scraper passes twitterHandles when provided."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_twitter_scraper(twitter_handles=['NASA', 'elonmusk'])
+
+    assert result['status'] == 'success'
+    run_input = mock_apify_client.actor.return_value.call.call_args.kwargs['run_input']
+    assert run_input['twitterHandles'] == ['NASA', 'elonmusk']
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_twitter_scraper_sort_and_language(mock_apify_client: MagicMock) -> None:
+    """Twitter scraper passes sort and tweet_language parameters."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_twitter_scraper(search_query='AI', sort='Top', tweet_language='en')
+
+    assert result['status'] == 'success'
+    run_input = mock_apify_client.actor.return_value.call.call_args.kwargs['run_input']
+    assert run_input['sort'] == 'Top'
+    assert run_input['tweetLanguage'] == 'en'
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_twitter_scraper_invalid_sort() -> None:
+    """Twitter scraper returns error for invalid sort option."""
+    result = apify_twitter_scraper(search_query='test', sort='Invalid')
+
+    assert result['status'] == 'error'
+    assert 'sort' in result['content'][0]['text']
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_twitter_scraper_missing_params() -> None:
+    """Twitter scraper returns error when no input provided."""
+    result = apify_twitter_scraper()
+
+    assert result['status'] == 'error'
+    assert 'search_query' in result['content'][0]['text'] or 'urls' in result['content'][0]['text']
+
+
+# --- apify_tiktok_scraper ---
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_tiktok_scraper_search_success(mock_apify_client: MagicMock) -> None:
+    """TikTok scraper maps search_query to searchQueries and results_limit to resultsPerPage."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_tiktok_scraper(search_query='cooking', results_limit=15)
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    run_input = call_kwargs['run_input']
+    assert run_input['searchQueries'] == ['cooking']
+    assert run_input['resultsPerPage'] == 15
+    mock_apify_client.actor.assert_called_once_with('clockworks/tiktok-scraper')
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_tiktok_scraper_with_urls(mock_apify_client: MagicMock) -> None:
+    """TikTok scraper maps urls to postURLs."""
+    post_urls = ['https://www.tiktok.com/@user/video/123']
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_tiktok_scraper(urls=post_urls)
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    assert call_kwargs['run_input']['postURLs'] == post_urls
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_tiktok_scraper_with_hashtags(mock_apify_client: MagicMock) -> None:
+    """TikTok scraper passes hashtags to the dedicated hashtags input."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_tiktok_scraper(hashtags=['fyp', 'cooking'])
+
+    assert result['status'] == 'success'
+    run_input = mock_apify_client.actor.return_value.call.call_args.kwargs['run_input']
+    assert run_input['hashtags'] == ['fyp', 'cooking']
+    assert 'searchQueries' not in run_input
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_tiktok_scraper_with_profiles(mock_apify_client: MagicMock) -> None:
+    """TikTok scraper passes profiles to the dedicated profiles input."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_tiktok_scraper(profiles=['charlidamelio', 'khaby.lame'])
+
+    assert result['status'] == 'success'
+    run_input = mock_apify_client.actor.return_value.call.call_args.kwargs['run_input']
+    assert run_input['profiles'] == ['charlidamelio', 'khaby.lame']
+    assert 'searchQueries' not in run_input
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_tiktok_scraper_missing_params() -> None:
+    """TikTok scraper returns error when no input provided."""
+    result = apify_tiktok_scraper()
+
+    assert result['status'] == 'error'
+    assert 'search_query' in result['content'][0]['text'] or 'hashtags' in result['content'][0]['text']
+
+
+# --- apify_facebook_posts_scraper ---
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_facebook_posts_scraper_success(mock_apify_client: MagicMock) -> None:
+    """Facebook posts scraper maps page_url to startUrls and results_limit to resultsLimit."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_facebook_posts_scraper(
+            page_url='https://www.facebook.com/apify',
+            results_limit=10,
+        )
+
+    assert result['status'] == 'success'
+    call_kwargs = mock_apify_client.actor.return_value.call.call_args.kwargs
+    run_input = call_kwargs['run_input']
+    assert run_input['startUrls'] == [{'url': 'https://www.facebook.com/apify'}]
+    assert run_input['resultsLimit'] == 10
+    assert 'onlyPostsNewerThan' not in run_input
+    mock_apify_client.actor.assert_called_once_with('apify/facebook-posts-scraper')
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_facebook_posts_scraper_with_date_filter(mock_apify_client: MagicMock) -> None:
+    """Facebook posts scraper passes onlyPostsNewerThan when provided."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_facebook_posts_scraper(
+            page_url='https://www.facebook.com/apify',
+            only_posts_newer_than='2024-01-01',
+        )
+
+    assert result['status'] == 'success'
+    run_input = mock_apify_client.actor.return_value.call.call_args.kwargs['run_input']
+    assert run_input['onlyPostsNewerThan'] == '2024-01-01'
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_facebook_posts_scraper_invalid_page_url() -> None:
+    """Facebook posts scraper returns error for non-http(s) page_url."""
+    result = apify_facebook_posts_scraper(page_url='not-a-url')
+
+    assert result['status'] == 'error'
+    assert 'Invalid URL' in result['content'][0]['text']
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_twitter_scraper_invalid_url_in_list() -> None:
+    """Twitter scraper returns error when any URL in the list is invalid; error names the index."""
+    result = apify_twitter_scraper(urls=['https://x.com/valid', 'ftp://bad'])
+
+    assert result['status'] == 'error'
+    text = result['content'][0]['text']
+    assert 'urls[1]' in text
+    assert 'Invalid URL scheme' in text
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_tiktok_scraper_invalid_url_in_list() -> None:
+    """TikTok scraper returns error when any URL in the list is invalid."""
+    result = apify_tiktok_scraper(urls=['not-a-url'])
+
+    assert result['status'] == 'error'
+    assert 'urls[0]' in result['content'][0]['text']
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_instagram_scraper_invalid_url_in_list() -> None:
+    """Instagram scraper returns error when any URL in the urls list is invalid."""
+    result = apify_instagram_scraper(urls=['https://www.instagram.com/apify/', 'javascript:alert(1)'])
+
+    assert result['status'] == 'error'
+    assert 'urls[1]' in result['content'][0]['text']
+
+
+# --- Social media: dependency and token guards ---
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_social_media_missing_dependency() -> None:
+    """Social media tools return error when apify-client is not installed."""
+    with patch('strands_apify.utils.HAS_APIFY_CLIENT', new=False):
+        result = apify_instagram_scraper(search_query='test')
+
+    assert result['status'] == 'error'
+    assert 'apify-client' in result['content'][0]['text']
+
+
+def test_social_media_missing_token(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Social media tools return error when APIFY_TOKEN is missing."""
+    monkeypatch.delenv('APIFY_TOKEN', raising=False)
+    result = apify_twitter_scraper(search_query='test')
+
+    assert result['status'] == 'error'
+    assert 'APIFY_TOKEN' in result['content'][0]['text']
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_social_media_actor_failure(mock_apify_client: MagicMock) -> None:
+    """Social media tools return error when the underlying Actor run fails."""
+    mock_apify_client.actor.return_value.call.return_value = MOCK_FAILED_RUN
+
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        result = apify_facebook_posts_scraper(page_url='https://www.facebook.com/apify')
+
+    assert result['status'] == 'error'
+    assert 'FAILED' in result['content'][0]['text']
+
+
+HUGE = 1_000_000
+
+
+def _run_input(mock_apify_client: MagicMock) -> dict[str, Any]:
+    return mock_apify_client.actor.return_value.call.call_args.kwargs['run_input']
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_instagram_scraper_clamps_results_limit_and_search_limit(mock_apify_client: MagicMock) -> None:
+    """Results per hit and the number of search hits are both capped in the Actor input."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        apify_instagram_scraper(search_query='webdev', results_limit=HUGE, search_limit=HUGE)
+
+    run_input = _run_input(mock_apify_client)
+    assert run_input['resultsLimit'] == MAX_ITEMS
+    assert run_input['searchLimit'] == MAX_ITEMS
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_linkedin_profile_posts_keeps_its_own_lower_cap(
+    monkeypatch: pytest.MonkeyPatch, mock_apify_client: MagicMock
+) -> None:
+    """The Actor's own limit of 100 applies, and a lower general ceiling wins over it."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        apify_linkedin_profile_posts(profile_url='neal-mohan', results_limit=HUGE)
+    assert _run_input(mock_apify_client)['limit'] == 100
+
+    monkeypatch.setenv('STRANDS_APIFY_MAX_ITEMS', '50')
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        apify_linkedin_profile_posts(profile_url='neal-mohan', results_limit=HUGE)
+    assert _run_input(mock_apify_client)['limit'] == 50
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_linkedin_profile_search_clamps_results_limit(mock_apify_client: MagicMock) -> None:
+    """`results_limit` is capped in the Actor input."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        apify_linkedin_profile_search(search_query='engineer', results_limit=HUGE)
+
+    assert _run_input(mock_apify_client)['maxItems'] == MAX_ITEMS
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_twitter_scraper_clamps_results_limit(mock_apify_client: MagicMock) -> None:
+    """`results_limit` is capped in the Actor input."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        apify_twitter_scraper(search_query='web scraping', results_limit=HUGE)
+
+    assert _run_input(mock_apify_client)['maxItems'] == MAX_ITEMS
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_tiktok_scraper_clamps_results_limit(mock_apify_client: MagicMock) -> None:
+    """`results_limit` is capped in the Actor input."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        apify_tiktok_scraper(search_query='python', results_limit=HUGE)
+
+    assert _run_input(mock_apify_client)['resultsPerPage'] == MAX_ITEMS
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_facebook_posts_scraper_clamps_results_limit(mock_apify_client: MagicMock) -> None:
+    """`results_limit` is capped in the Actor input."""
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        apify_facebook_posts_scraper(page_url='https://www.facebook.com/apify', results_limit=HUGE)
+
+    assert _run_input(mock_apify_client)['resultsLimit'] == MAX_ITEMS
+
+
+@pytest.mark.usefixtures('mock_apify_env')
+def test_items_ceiling_can_be_raised_from_the_environment(
+    monkeypatch: pytest.MonkeyPatch, mock_apify_client: MagicMock
+) -> None:
+    """`STRANDS_APIFY_MAX_ITEMS` lets a larger request through to the Actor input."""
+    monkeypatch.setenv('STRANDS_APIFY_MAX_ITEMS', '5000')
+
+    with patch('strands_apify.utils.ApifyClient', return_value=mock_apify_client):
+        apify_twitter_scraper(search_query='web scraping', results_limit=5000)
+
+    assert _run_input(mock_apify_client)['maxItems'] == 5000
