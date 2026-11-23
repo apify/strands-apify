@@ -82,8 +82,15 @@ def default_ceilings(monkeypatch: pytest.MonkeyPatch) -> None:
         'STRANDS_APIFY_MAX_MEMORY_MBYTES',
         'STRANDS_APIFY_MAX_ITEMS',
         'STRANDS_APIFY_MAX_CRAWL_DEPTH',
+        'STRANDS_APIFY_MAX_TOTAL_CHARGE_USD',
     ):
         monkeypatch.delenv(env_var, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def plain_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Turn off the untrusted content markers, so tests can parse the JSON. `test_untrusted_output.py` covers them."""
+    monkeypatch.setenv('STRANDS_APIFY_MARK_OUTPUT_UNTRUSTED', '0')
 
 
 @pytest.fixture
