@@ -50,7 +50,7 @@ jobs:
           exit 1
 
       - name: Prepare distribution
-        uses: apify/actions/prepare-pypi-distribution@v1.6.2
+        uses: apify/actions/prepare-pypi-distribution@v1.9.0
         with:
           package_name: strands-apify
           is_prerelease: ${{ inputs.is_prerelease && 'yes' || '' }}
@@ -58,7 +58,7 @@ jobs:
           ref: ${{ inputs.ref }}
 
       - name: Verify built package
-        uses: apify/actions/python-package-check@v1.6.2
+        uses: apify/actions/python-package-check@v1.9.0
         with:
           package_name: strands_apify
           dist_dir: dist
