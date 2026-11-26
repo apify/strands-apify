@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+<!-- git-cliff-unreleased-start -->
+
+## 0.2.1 - **not yet released**
+
+### 🚀 Features
+
+- Add a charge limit and mark tool output as untrusted ([#21](https://github.com/apify/strands-apify/pull/21)) ([b1a79db](https://github.com/apify/strands-apify/commit/b1a79db006309708417ca5fe583cbd4e7b62c032)) by [@daveomri](https://github.com/daveomri)
+
+<!-- git-cliff-unreleased-end -->
+
 ## [0.2.0](https://github.com/apify/strands-apify/releases/tag/v0.2.0) (2026-10-29)
 
 ### 🚀 Features
